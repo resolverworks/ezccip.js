@@ -1,5 +1,5 @@
 # ezccip.js
-Turnkey CCIP-Read Handler
+Turnkey CCIP-Read Handler for ENS
 
 * see [types](./dist/index.d.ts) / assumes [ethers](https://github.com/ethers-io/ethers.js/)
 * works with [**TheOffchainResolver.sol**](https://github.com/resolverworks/TheOffchainResolver.sol) / [eth:0xa4407](https://etherscan.io/address/0xa4407E257Aa158C737292ac95317a29b4C90729D#code)

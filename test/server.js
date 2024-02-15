@@ -61,7 +61,14 @@ createServer(async (req, reply) => {
 			default: throw new RESTError(400, 'unsupported http method');
 		}
 	} catch (err) {
-		let {status = 500, message = 'internal error'} = err;
+		let status = 500;
+		let message = 'internal error';
+		if (err instanceof RESTError) {
+			({status, message} = err);
+			log(req, `[${status}] ${message}`);
+		} else {
+			log(req, err);
+		}
 		reply.statusCode = status;
 		write_json(reply, {message});
 		log(req, err);
