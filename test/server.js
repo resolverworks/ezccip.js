@@ -19,7 +19,7 @@ createServer(async (req, reply) => {
 			case 'OPTIONS': return reply.setHeader('access-control-allow-headers', '*').end();
 			case 'POST': {
 				let v = [];
-				for await (const x of req) v.push(x);
+				for await (let x of req) v.push(x);
 				let {sender, data: request} = JSON.parse(Buffer.concat(v));
 				let {data, history} = await handleCCIPRead({sender, request, 
 					signingKey,

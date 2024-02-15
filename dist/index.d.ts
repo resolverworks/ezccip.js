@@ -11,11 +11,14 @@ export interface Record {
 	ABI?(types: number): Promise<{type: number, data: BytesLike} | undefined>;
 }
 
-export interface History {
-	level: number;
-	actions: string[];
-	children: History[];
-	error?: any;
+export type Action = {readonly desc: string, [key: string]: any};
+export type History = {
+	readonly level: number;
+	readonly actions: readonly Action[];
+	readonly children: readonly History[];
+	readonly error?: any;
+	add(a: Action): void;
+	enter(): History;
 }
 
 export class RESTError extends Error {
@@ -30,8 +33,12 @@ export function handleCCIPRead(config: {
 	signingKey: SigningKey;
 	resolver: HexString;
 	ttlSec?: number;
-	maxDepth?: number;
+	recursionLimit?: number;
 }): Promise<{
 	data: HexString;
 	history: History;
 }>; 
+
+export function is_hex(s?: string): boolean;
+export function asciiize(s: string): string;
+export function labels_from_dns_encoded(v: Uint8Array): string[];

@@ -4,7 +4,7 @@ Turnkey CCIP-Read Handler
 * see [types](./dist/index.d.ts) / assumes [ethers](https://github.com/ethers-io/ethers.js/)
 * works with [**TheOffchainResolver.sol**](https://github.com/resolverworks/TheOffchainResolver.sol) / [eth:0xa4407](https://etherscan.io/address/0xa4407E257Aa158C737292ac95317a29b4C90729D#code)
 * used by [**TheOffchainGateway.js**](https://github.com/resolverworks/TheOffchainGateway.js)
-* simple example: [`server.js`](./test/server.js) / `npm run test`
+* simple example: [`server.js`](./test/server.js) / `npm run start`
 
 ```ts
 // imagine: your HTTP server has a request for CCIP-Read
@@ -18,18 +18,20 @@ export function handleCCIPRead(config: {
     getRecord(context: {name: string, labels: string[], sender: HexString}): Promise<Record | undefined>;
 
     // your servers signing private key
-    // (pick something at random)
     // = new ethers.SigningKey('0x...');
     signingKey: SigningKey;
 	
-    resolver?: HexString;   // default: TheOffchainResolver.sol
-    ttlSec?: number;        // default 60 sec
-    maxDepth?: number;      // default 1 (eg. multicall[multicall[...]] throws)
+    // any contract deployment that conforms to TheOffchainResolver.sol protocol
+    resolver: HexString;
+
+    ttlSec?: number;         // default 60 sec
+    recursionLimit?: number; // default 1 (eg. multicall[multicall[...]] throws)
 }): Promise<{
     data: HexString,  // the JSON data to respond with
     history: History  // toString()-able description of what happened (partial multicall errors)
 }>; 
-// this function may throw normally or the following:
+
+// handleCCIPRead() may throw normally or the following:
 export class RESTError extends Error {
     status: number; // http response code
     cause?: Error;
@@ -53,4 +55,3 @@ export interface Record {
 * Example: `ENS1 0xa4407E257Aa158C737292ac95317a29b4C90729D 0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/`
 
 * Demo: [Resolver](https://adraffy.github.io/ens-normalize.js/test/resolver.html#ezccip.raffy.xyz) / [ENS](https://app.ens.domains/ezccip.raffy.xyz)
-

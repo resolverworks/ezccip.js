@@ -1,22 +1,24 @@
 export class History {
 	constructor(level) {
-		this.level = level;
+		this.level = level; // integer, counts down
 		this.actions = [];
 		this.children = [];
 	}
-	add(s) {
-		this.actions.push(s);
+	add(action) {
+		let {desc} = action;
+		if (typeof desc !== 'string') throw new Error('expected description');
+		this.actions.push(action);
 	}
-	next() {
+	enter() {
 		let {level} = this;
-		if (!level) throw new Error('too deep');
+		if (!level) throw new Error('recursion limit');
 		let child = new History(level-1);
 		this.children.push(child);
 		return child;
 	}
 	toString() {
 		let {actions, error, children: v} = this;
-		let desc = actions.join('.');
+		let desc = actions.map(x => x.desc).join('.');
 		if (error) {
 			desc += `<${error}>`;
 		} else if (v.length) {

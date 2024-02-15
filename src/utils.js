@@ -1,13 +1,12 @@
 import {ethers} from 'ethers';
 
+// true if even-length 0x-prefixed mixed-case hex string
 export function is_hex(s) {
-	return typeof s === 'string' && /^0x[0-9a-f]*$/i.test(s);
+	return typeof s === 'string' && !(s.length&1) && /^0x[0-9a-f]*$/i.test(s);
 }
 
-export function is_address(s) {
-	return typeof s === 'string' && s.length == 42 && is_hex(s);
-}
-
+// dns-encoded name to array of unicode labels
+// inverse of ethers.dnsEncode()
 export function labels_from_dns_encoded(v) {
 	let labels = [];
 	let pos = 0;
@@ -23,9 +22,11 @@ export function labels_from_dns_encoded(v) {
 	throw new Error('invalid DNS-encoded name');
 }
 
-export function safe_str(s) {
+// unicode string to log-safe ascii string with {XX} escapes
+// " !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~"	
+export function asciiize(s) {
 	return Array.from(s, ch => {
 		let cp = ch.codePointAt(0);
-		return cp >= 0x20 && cp < 0x80 ? ch : `{${cp.toString(16).toUpperCase().padStart(2, '0')}}`;
+		return cp >= 32 && cp <= 126 ? ch : `{${cp.toString(16).toUpperCase().padStart(2, '0')}}`;
 	}).join('');
 }
