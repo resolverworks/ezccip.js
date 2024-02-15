@@ -4,7 +4,7 @@ Turnkey CCIP-Read Handler
 * see [types](./dist/index.d.ts) / assumes [ethers](https://github.com/ethers-io/ethers.js/)
 * works with [**TheOffchainResolver.sol**](https://github.com/resolverworks/TheOffchainResolver.sol) / [eth:0xa4407](https://etherscan.io/address/0xa4407E257Aa158C737292ac95317a29b4C90729D#code)
 * used by [**TheOffchainGateway.js**](https://github.com/resolverworks/TheOffchainGateway.js)
-* simple example: [`server.js`](./test/server.js) / `npm run start`
+* simple demo: `npm run start` → [`server.js`](./test/server.js)
 
 ```ts
 // imagine: your HTTP server has a request for CCIP-Read
@@ -51,7 +51,5 @@ export interface Record {
 ## Usage
 
 * Set a (wildcard `*`) [DNS **TXT** Record](https://support.ens.domains/en/articles/8834820-offchain-gasless-dnssec-names-in-ens) to `ENS1 ${THE_OFFCHAIN_RESOLVER} ${YOUR_SIGNER} ${YOUR_SERVER_ENDPOINT}`
-
-* Example: `ENS1 0xa4407E257Aa158C737292ac95317a29b4C90729D 0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/`
-
-* Demo: [Resolver](https://adraffy.github.io/ens-normalize.js/test/resolver.html#ezccip.raffy.xyz) / [ENS](https://app.ens.domains/ezccip.raffy.xyz)
+	* Example: `ENS1 0xa4407E257Aa158C737292ac95317a29b4C90729D 0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/`
+* Visit [ENS](https://app.ens.domains/ezccip.raffy.xyz) or [Resolver](https://adraffy.github.io/ens-normalize.js/test/resolver.html#ezccip.raffy.xyz)
