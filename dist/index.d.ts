@@ -1,4 +1,4 @@
-import type {SigningKey, BytesLike, BigNumberish} from 'ethers';
+import type {SigningKey, BytesLike, BigNumberish, Interface} from 'ethers';
 
 export type HexString = string;
 
@@ -42,3 +42,6 @@ export function handleCCIPRead(config: {
 export function is_hex(s?: string): boolean;
 export function asciiize(s: string): string;
 export function labels_from_dns_encoded(v: Uint8Array): string[];
+
+export const CCIP_ABI: Interface;
+export const RESOLVER_ABI: Interface;

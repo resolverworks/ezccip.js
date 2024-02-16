@@ -1,6 +1,6 @@
 {
 	"name": "@resolverworks/ezccip",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "Turnkey CCIP-Read Handler",
 	"keywords": [
 		"ENS",

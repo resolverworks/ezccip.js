@@ -65,17 +65,14 @@ createServer(async (req, reply) => {
 		let message = 'internal error';
 		if (err instanceof RESTError) {
 			({status, message} = err);
-			log(req, `[${status}] ${message}`);
-		} else {
-			log(req, err);
 		}
 		reply.statusCode = status;
 		write_json(reply, {message});
-		log(req, err);
+		log(req, status, err);
 	}
 }).listen(PORT).on('listening', () => {
-	console.log('Ready!');
 	console.log(`Signer: ${ethers.computeAddress(signingKey)}`);
+	console.log(`Listening for "${ENDPOINT}" on ${PORT}`);
 });
 
 function log(req, ...a) {

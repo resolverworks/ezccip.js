@@ -5,6 +5,7 @@ Turnkey CCIP-Read Handler for ENS
 * works with [**TheOffchainResolver.sol**](https://github.com/resolverworks/TheOffchainResolver.sol) / [eth:0xa4407](https://etherscan.io/address/0xa4407E257Aa158C737292ac95317a29b4C90729D#code)
 * used by [**TheOffchainGateway.js**](https://github.com/resolverworks/TheOffchainGateway.js)
 * simple demo: `npm run start` → [`server.js`](./test/server.js)
+* `npm i @resolverworks/ezccip`
 
 ```ts
 // imagine: your HTTP server has a request for CCIP-Read
@@ -25,7 +26,7 @@ export function handleCCIPRead(config: {
     resolver: HexString;
 
     ttlSec?: number;         // default 60 sec
-    recursionLimit?: number; // default 1 (eg. multicall[multicall[...]] throws)
+    recursionLimit?: number; // default 2 (eg. multicall[multicall[multicall[...]]] throws)
 }): Promise<{
     data: HexString,  // the JSON data to respond with
     history: History  // toString()-able description of what happened (partial multicall errors)

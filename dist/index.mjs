@@ -88,7 +88,7 @@ class RESTError extends Error {
 }
 
 // https://eips.ethereum.org/EIPS/eip-3668
-async function handleCCIPRead({sender, request, getRecord, signingKey, resolver, recursionLimit = 1, ttlSec = 60} = {}) {
+async function handleCCIPRead({sender, request, getRecord, signingKey, resolver, recursionLimit = 2, ttlSec = 60} = {}) {
 	if (!is_hex(sender) || sender.length !== 42) throw new RESTError(400, 'expected sender address');
 	if (!is_hex(request) || request.length < 10) throw new RESTError(400, 'expected calldata');
 	sender = sender.toLowerCase();
@@ -238,4 +238,4 @@ function abi_types_str(types) {
 	return v.join('|');
 }
 
-export { RESTError, handleCCIPRead };
+export { CCIP_ABI, RESOLVER_ABI, RESTError, handleCCIPRead };

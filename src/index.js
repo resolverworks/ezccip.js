@@ -4,12 +4,12 @@ import {ethers} from 'ethers';
 
 const ABI_CODER = ethers.AbiCoder.defaultAbiCoder();
 
-const CCIP_ABI = cache_abi(new ethers.Interface([
+export const CCIP_ABI = cache_abi(new ethers.Interface([
 	'function resolve(bytes name, bytes data) external view returns (bytes)',
 	'function multicall(bytes[] calls) external view returns (bytes[])',
 ]));
 
-const RESOLVER_ABI = cache_abi(new ethers.Interface([
+export const RESOLVER_ABI = cache_abi(new ethers.Interface([
 	'function name(bytes32 node) external view returns (string)',
 	'function addr(bytes32 node) external view returns (address)',
 	'function addr(bytes32 node, uint256 type) external view returns (bytes)',
@@ -29,7 +29,7 @@ export class RESTError extends Error {
 }
 
 // https://eips.ethereum.org/EIPS/eip-3668
-export async function handleCCIPRead({sender, request, getRecord, signingKey, resolver, recursionLimit = 1, ttlSec = 60} = {}) {
+export async function handleCCIPRead({sender, request, getRecord, signingKey, resolver, recursionLimit = 2, ttlSec = 60} = {}) {
 	if (!is_hex(sender) || sender.length !== 42) throw new RESTError(400, 'expected sender address');
 	if (!is_hex(request) || request.length < 10) throw new RESTError(400, 'expected calldata');
 	sender = sender.toLowerCase();
