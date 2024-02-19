@@ -64,7 +64,7 @@ createServer(async (req, reply) => {
 					// use wrapper to pass in extra context
 					getRecord: x => getRecord(x, req._ip) 
 				});
-				log(req, url.pathname, history.toString());
+				log(req, history.toString());
 				return write_json(reply, {data});
 			}
 			default: throw new RESTError(400, 'unsupported http method');

@@ -10,7 +10,6 @@ Turnkey CCIP-Read Handler for ENS
 	* `multicall(resolve(...))`
 	* `multicall(resolve(multicall(...)), ...)`
 
-
 ```ts
 // imagine: your HTTP server has a request for CCIP-Read
 export function handleCCIPRead(config: {
