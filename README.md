@@ -10,7 +10,6 @@ Turnkey CCIP-Read Handler for ENS
 	* `multicall(resolve(...))`
 	* `multicall(resolve(multicall(...)), ...)`
 
-Demo: `npm run start` → [`server.js`](./test/server.js)
 
 ```ts
 // imagine: your HTTP server has a request for CCIP-Read
@@ -60,13 +59,21 @@ Compute public address from a private key:
 ethers.computeAddress(new ethers.SigningKey('0x...'));
 ```
 
-## Usage
+## Demo
 
-* set private key
-* `npm run start`
-	* **DNS**: mainnet → `/dns`, sepolia → `/dns-sepolia`
+1. [`server.js`](./test/server.js)
+	* set private key
+1. `npm run start`
+	* **DNS**: mainnet → `/dns` / sepolia → `/dns-sepolia`
 	* **ENS**: goerli → `/ens-goerli`
-* set [`CONTEXT`](https://github.com/resolverworks/TheOffchainResolver.sol?tab=readme-ov-file#context-format)
+1. set [`CONTEXT`](https://github.com/resolverworks/TheOffchainResolver.sol?tab=readme-ov-file#context-format)
+
+## Examples
+
+* **DNS**: [`ezccip.raffy.xyz`](https://adraffy.github.io/ens-normalize.js/test/resolver.html#ezccip.raffy.xyz)
+	* Context: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/dns`
+* **ENS**: [`ezccip.eth`](https://adraffy.github.io/ens-normalize.js/test/resolver.html?goerli&debug=%7B%22records%22%3A%5B%22ccip.context%22%5D%7D#ezccip.eth)
+	* Context: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/ens-goerli`
 
 ## Implementation Comments
 
