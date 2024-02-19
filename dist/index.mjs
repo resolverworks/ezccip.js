@@ -52,10 +52,11 @@ class History {
 	toString() {
 		let {actions, error, children: v} = this;
 		let desc = actions.map(x => x.desc).join('.');
+		if (v.length) {
+			desc += `(${v.length})[${v.join(' ')}]`;
+		}
 		if (error) {
 			desc += `<${error}>`;
-		} else if (v.length) {
-			desc += `(${v.length})[${v.join(' ')}]`;
 		}
 		return desc;
 	}
@@ -81,9 +82,8 @@ const RESOLVER_ABI = cache_abi(new ethers.Interface([
 
 class RESTError extends Error {
 	constructor(status, message, cause) {
-		super(message, {cause});
+		super(message, cause ? {cause} : undefined);
 		this.status = status;
-		if (cause && !this.cause) this.cause = cause;
 	}
 }
 
@@ -101,13 +101,15 @@ async function handleCCIPRead({sender, request, getRecord, signingKey, resolver,
 			['address', 'uint64', 'bytes32', 'bytes32'],
 			[resolver, expires, ethers.keccak256(request), ethers.keccak256(response)]
 		);
-		let data = ABI_CODER.encode(['bytes', 'uint64', 'bytes'], [signingKey.sign(hash).serialized, expires, response]);
+		let data = ABI_CODER.encode(
+			['bytes', 'uint64', 'bytes'],
+			[signingKey.sign(hash).serialized, expires, response]
+		);
 		return {data, history};
 	} catch (err) {
 		throw new RESTError(500, 'invalid request', err);
 	}
 }
-
 
 async function handle_ccip_call(sender, data, getRecord, history) {
 	try {
@@ -119,10 +121,14 @@ async function handle_ccip_call(sender, data, getRecord, history) {
 			case 'resolve(bytes,bytes)': {
 				let labels = labels_from_dns_encoded(ethers.getBytes(args.name));
 				let name = labels.join('.');
+				// note: this doesn't normalize
+				// incoming name should be normalized
+				// your database should be normalized
 				history.add({desc: `resolve(${asciiize(name)})`, call, name});
-				let record = await getRecord({labels, name, sender});
+				let record = await getRecord({name, sender});
 				return await handle_resolve(record, args.data, history);
-				// returns without additional encoding
+				// returns without additional encoding 
+				// since: abi.decode(abi.encode(x)) == x
 			}
 			case 'multicall(bytes)': {
 				history.add({desc: 'multicall', call});
@@ -144,7 +150,7 @@ async function handle_resolve(record, calldata, history) {
 		if (!call) throw new Error(`unsupported resolve() method: ${method}`);
 		let args = RESOLVER_ABI.decodeFunctionData(call, calldata);
 		let res;
-		switch (call.__name) {		
+		switch (call.__name) {
 			case 'multicall(bytes[])': {
 				// https://github.com/ensdomains/ens-contracts/blob/staging/contracts/resolvers/IMulticallable.sol
 				history.add({desc: 'multicall'});

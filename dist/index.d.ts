@@ -11,7 +11,7 @@ export interface Record {
 	ABI?(types: number): Promise<{type: number, data: BytesLike} | undefined>;
 }
 
-export type Action = {readonly desc: string, [key: string]: any};
+export interface Action { desc: string; }
 export type History = {
 	readonly level: number;
 	readonly actions: readonly Action[];
@@ -23,13 +23,12 @@ export type History = {
 
 export class RESTError extends Error {
 	status: number;
-	cause?: any;
 }
 
 export function handleCCIPRead(config: {
 	sender: HexString;
 	request: HexString;
-	getRecord(context: {name: string, labels: string[], sender: HexString}): Promise<Record | undefined>;
+	getRecord(context: {name: string, sender: HexString}): Promise<Record | undefined>;
 	signingKey: SigningKey;
 	resolver: HexString;
 	ttlSec?: number;

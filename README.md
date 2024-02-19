@@ -1,11 +1,16 @@
 # ezccip.js
 Turnkey CCIP-Read Handler for ENS
 
+`npm i @resolverworks/ezccip`
 * see [types](./dist/index.d.ts) / assumes [ethers](https://github.com/ethers-io/ethers.js/)
-* works with [**TheOffchainResolver.sol**](https://github.com/resolverworks/TheOffchainResolver.sol) / [eth:0xa4407](https://etherscan.io/address/0xa4407E257Aa158C737292ac95317a29b4C90729D#code)
+* works with [**TheOffchainResolver.sol**](https://github.com/resolverworks/TheOffchainResolver.sol)
 * used by [**TheOffchainGateway.js**](https://github.com/resolverworks/TheOffchainGateway.js)
-* simple demo: `npm run start` → [`server.js`](./test/server.js)
-* `npm i @resolverworks/ezccip`
+* supports *Multicall-over-CCIP-Read*
+	* `resolve(multicall(...))`
+	* `multicall(resolve(...))`
+	* `multicall(resolve(multicall(...)), ...)`
+
+Demo: `npm run start` → [`server.js`](./test/server.js)
 
 ```ts
 // imagine: your HTTP server has a request for CCIP-Read
@@ -13,29 +18,29 @@ export function handleCCIPRead(config: {
     // pass the parsed JSON {sender, data} to this function:
     sender: HexString;
     request: HexString; // instead of "data"
-	
+
     // on resolve(), this async function gets called with the decoded name
     // process it and maybe return a Record() (see below)
-    getRecord(context: {name: string, labels: string[], sender: HexString}): Promise<Record | undefined>;
+    // name is passed without any validation
+    getRecord(context: {name: string, sender: HexString}): Promise<Record | undefined>;
 
     // your servers signing private key
     // = new ethers.SigningKey('0x...');
     signingKey: SigningKey;
-	
-    // any contract deployment that conforms to TheOffchainResolver.sol protocol
+
+    // any contract deployment that conforms to TheOffchainResolver protocol
     resolver: HexString;
 
     ttlSec?: number;         // default 60 sec
     recursionLimit?: number; // default 2 (eg. multicall[multicall[multicall[...]]] throws)
 }): Promise<{
-    data: HexString,  // the JSON data to respond with
-    history: History  // toString()-able description of what happened (partial multicall errors)
+    data: HexString;  // the JSON data to respond with
+    history: History; // toString()-able description of what happened (partial multicall errors)
 }>; 
 
 // handleCCIPRead() may throw normally or the following:
 export class RESTError extends Error {
     status: number; // http response code
-    cause?: Error;
 }
 
 // records may implement any of these async functions
@@ -49,8 +54,41 @@ export interface Record {
 }
 ```
 
+Compute public address from a private key:
+```js
+// note: the demo server prints the signer address on start
+ethers.computeAddress(new ethers.SigningKey('0x...'));
+```
+
 ## Usage
 
-* Set a (wildcard `*`) [DNS **TXT** Record](https://support.ens.domains/en/articles/8834820-offchain-gasless-dnssec-names-in-ens) to `ENS1 ${THE_OFFCHAIN_RESOLVER} ${YOUR_SIGNER} ${YOUR_SERVER_ENDPOINT}`
-	* Example: `ENS1 0xa4407E257Aa158C737292ac95317a29b4C90729D 0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/`
-* Visit [ENS](https://app.ens.domains/ezccip.raffy.xyz) or [Resolver](https://adraffy.github.io/ens-normalize.js/test/resolver.html#ezccip.raffy.xyz)
+* set private key
+* `npm run start`
+	* **DNS**: mainnet → `/dns`, sepolia → `/dns-sepolia`
+	* **ENS**: goerli → `/ens-goerli`
+* set [`CONTEXT`](https://github.com/resolverworks/TheOffchainResolver.sol?tab=readme-ov-file#context-format)
+
+## Implementation Comments
+
+For some use-cases `getRecord()` can do the heavy-lifting and then `Record` getters just read from that cached result.
+```js
+async function getRecord({name}) {
+    let row = await db.fetchRow(name); // eg. SELECT * FROM db WHERE name = ?
+     return {
+        text(key) { return row[key]; }
+    }
+}
+```
+However, for other use-cases, you might want to delay this lookup until later, and have `getRecord()` just store the `name` until later.
+```js
+function getRecord({name}) { 
+    return new DelayedRecord(name); 
+}
+class DelayedRecord { 
+    constructor(name) {
+        this.name = name;
+    }
+    async text(key) {
+        return db.fetchCell(this.name, key);
+    }
+}

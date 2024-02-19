@@ -19,10 +19,11 @@ export class History {
 	toString() {
 		let {actions, error, children: v} = this;
 		let desc = actions.map(x => x.desc).join('.');
+		if (v.length) {
+			desc += `(${v.length})[${v.join(' ')}]`;
+		}
 		if (error) {
 			desc += `<${error}>`;
-		} else if (v.length) {
-			desc += `(${v.length})[${v.join(' ')}]`;
 		}
 		return desc;
 	}
