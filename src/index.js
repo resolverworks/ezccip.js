@@ -1,2 +1,2 @@
-export * from './index.js';
+export * from './handler.js';
 export * from './utils.js';
