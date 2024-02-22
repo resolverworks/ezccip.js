@@ -1,6 +1,6 @@
 import {createServer} from 'node:http';
 import {ethers} from 'ethers';
-import {handleCCIPRead, RESTError} from '../src/index.js';
+import {handleCCIPRead, RESTError} from '../src/handler.js';
 
 const PORT = 8016;
 

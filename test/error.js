@@ -1,4 +1,4 @@
-import {RESTError} from '../src/index.js';
+import {RESTError} from '../src/handler.js';
 
 try {
 	throw new Error('chonk');
