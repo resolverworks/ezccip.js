@@ -19,6 +19,8 @@ RESOLVE_ABI.forEachFunction(x => x.__name = x.format());
 export class EZCCIP {
 	constructor() {
 		this.impls = new Map();
+		// multicall is always enabled
+		// you can disable it with {recursionLimit: 0}
 		this.register('multicall(bytes[]) external view returns (bytes[])', async ([calls], context, history) => {
 			history.show = false;
 			return [await Promise.all(calls.map(x => this.handleCall(x, context, history.enter()).catch(encode_error)))];
@@ -39,7 +41,8 @@ export class EZCCIP {
 			// since: abi.decode(abi.encode(x)) == x
 		});
 	}
-	register(abi, impl) {
+	register(abi0, impl) {
+		let abi = abi0;
 		if (typeof abi === 'string') {
 			abi = abi.trim();
 			if (!abi.startsWith('function') && !abi.includes('\n')) abi = `function ${abi}`;
@@ -49,11 +52,11 @@ export class EZCCIP {
 			abi = new ethers.Interface(abi);
 		}
 		if (!(abi instanceof ethers.Interface)) {
-			throw with_error('expected abi', {abi});
+			throw with_error('unable to derive interface', {abi: abi0});
 		}
 		let frags = abi.fragments.filter(x => x instanceof ethers.FunctionFragment);
 		if (impl instanceof Function) {
-			if (frags.length != 1) throw error_with('expected 1 function', {abi, impl, fns: frags});
+			if (frags.length != 1) throw error_with('expected 1 implementation', {abi, impl, names: frags.map(x => x.format())});
 			let frag = frags[0];
 			this.impls.set(frag.selector, {abi, frag, fn: impl.bind(this)});
 		} else {
@@ -61,7 +64,7 @@ export class EZCCIP {
 				let frag = frags.find(x => x.name === name);
 				if (!frag) {
 					frag = frags.find(x => x.format() === name);
-					if (!frag) throw error_with('unknown abi function', {abi, name});
+					if (!frag) throw error_with(`expected interface function: ${name}`, {abi, impl, name});
 				}
 				this.impls.set(frag.selector, {abi, frag, fn: fn.bind(this)});
 			}
@@ -93,14 +96,18 @@ export class EZCCIP {
 			history.calldata = calldata;
 			let method = calldata.slice(0, 10);
 			let impl = this.impls.get(method);
-			if (!impl || (history.level < 0 && impl.name === MULTICALL)) throw new Error(`unsupported ccip method: ${method}`);
+			if (!impl || (!history.level && impl.name === MULTICALL)) throw new Error(`unsupported ccip method: ${method}`);
 			const {abi, frag, fn} = impl;
 			history.abi = abi;
 			history.frag = frag;
 			let args = abi.decodeFunctionData(frag, calldata);
 			history.args = history.show = args;
 			let res = await fn(args, context, history);
-			if (Array.isArray(res)) res = abi.encodeFunctionResult(frag, res);
+			if (Array.isArray(res)) {
+				// an array implies we need to encode the arguments
+				// otherwise, the result is considered already encoded
+				res = abi.encodeFunctionResult(frag, res); 
+			}
 			return res;
 		} catch (err) {
 			history.error = err;

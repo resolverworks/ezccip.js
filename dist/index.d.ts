@@ -1,14 +1,15 @@
 import type {SigningKey, BytesLike, BigNumberish, Interface} from 'ethers';
 
-export type HexString = string;
+type HexString = string;
+type UndefNull  = null | undefined; 
 
 export interface Record {
-	addr?(type: number) : Promise<BytesLike | undefined>;
-	text?(key: string) : Promise<string | undefined>;
-	contenthash?(): Promise<BytesLike | undefined>;
-	pubkey?(): Promise<{x: BigNumberish, y: BigNumberish} | BytesLike | undefined>; 
-	name?(): Promise<string | undefined>;
-	ABI?(types: number): Promise<{type: number, data: BytesLike} | BytesLike | undefined>;
+	addr?(type: number) : Promise<BytesLike | UndefNull>;
+	text?(key: string) : Promise<string | UndefNull>;
+	contenthash?(): Promise<BytesLike | UndefNull>;
+	pubkey?(): Promise<{x: BigNumberish, y: BigNumberish} | BytesLike | UndefNull>; 
+	name?(): Promise<string | UndefNull>;
+	ABI?(types: number): Promise<{type: number, data: BytesLike} | BytesLike | UndefNull>;
 }
 
 export type History = {
@@ -21,20 +22,21 @@ export type History = {
 }
 
 export class EZCCIP {
-	enableENSIP10(getRecord: (name: string, context: Object) => Promise<Record | undefined>, options: {multicall?: boolean}): void;
+	enableENSIP10(getRecord: (name: string, context: Object) => Promise<Record | UndefNull>, options?: {multicall?: boolean}): void;
 	register(abi: string | string[] | Interface, impl: Function | {[name: string]: Function}): void;
 	handleRead(sender: HexString, calldata: HexString, config: {
 		signingKey: SigningKey;
 		resolver: HexString;
 		ttlSec?: number;
 		recursionLimit?: number;
+		[key: string]: any;
 	}): Promise<{
 		data: HexString;
 		history: History;
 	}>;
 }
 
-export function callRecord(record: Record | undefined, calldata: HexString, multicall?: boolean, history?: History): string;
+export function callRecord(record: Record | UndefNull, calldata: HexString, multicall?: boolean, history?: History): string;
 
 export function is_phex(s?: string): boolean;
 export function asciiize(s: string): string;

@@ -4,6 +4,10 @@ export class History {
 	constructor(level) {
 		this.level = level; // integer, counts down
 		this.children = [];
+		this.calldata = null;
+		this.frag = null;
+		this.args = null;
+		this.show = null;
 	}
 	enter() {
 		let {level, children: v} = this;
