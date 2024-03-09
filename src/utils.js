@@ -1,8 +1,22 @@
 import {ethers} from 'ethers';
 
+export function error_with(message, params, cause) {
+	let error;
+	if (cause) {
+		error = new Error(message, {cause});
+		if (!error.cause) error.cause = cause;
+	} else {
+		error = new Error(message);
+	}
+	return Object.assign(error, params);
+}
+
 // true if even-length 0x-prefixed mixed-case hex string
-export function is_hex(s) {
+export function is_phex(s) {
 	return typeof s === 'string' && !(s.length&1) && /^0x[0-9a-f]*$/i.test(s);
+}
+export function is_bytes_like(x) {
+	return x instanceof Uint8Array || is_phex(x);
 }
 
 // dns-encoded name to array of unicode labels
