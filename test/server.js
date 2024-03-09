@@ -1,19 +1,15 @@
 import {createServer} from 'node:http';
 import {ethers} from 'ethers';
-import {EZCCIP} from '../src/handler.js';
-import { error_with } from '../src/utils.js';
+import {EZCCIP, error_with} from '../src/index.js';
 
 const PORT = 8016;
-
-// note: this was picked at random
-const signingKey = new ethers.SigningKey('0xbd1e630bd00f12f0810083ea3bd2be936ead3b2fa84d1bd6690c77da043e9e02');
-// signer: 0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd
-
 const ENDPOINTS = {
 	 '': '0x828ec5bDe537B8673AF98D77bCB275ae1CA26D1f',
 	's': '0x9Ec7f2ce83fcDF589487303fA9984942EF80Cb39',
 	'g': '0x9b87849Aa21889343b6fB1E146f9F734ecFA9982',
 };
+const signingKey = new ethers.SigningKey('0xbd1e630bd00f12f0810083ea3bd2be936ead3b2fa84d1bd6690c77da043e9e02');
+// signer: 0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd
 
 const ezccip = new EZCCIP();
 ezccip.enableENSIP10(async (name, {sender, ip}) => {
@@ -44,6 +40,7 @@ ezccip.enableENSIP10(async (name, {sender, ip}) => {
 		}
 	};
 });
+ezccip.register('example(uint256, uint256) returns (uint256)', ([a, b]) => [a * 1000n + b]);
 
 createServer(async (req, reply) => {
 	let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;

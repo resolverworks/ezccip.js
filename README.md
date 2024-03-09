@@ -58,28 +58,3 @@ reply.json({data});
     * Context: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/`
 * **ENS**: [`ezccip.eth`](https://adraffy.github.io/ens-normalize.js/test/resolver.html?sepolia#ezccip.eth)
     * Context: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/s`
-
-## Implementation Comments
-
-For some use-cases `getRecord()` can do the heavy-lifting and then `Record` getters just read from that cached result.
-```js
-async function getRecord({name}) {
-    let row = await db.fetchRow(name); // eg. SELECT * FROM db WHERE name = ?
-     return {
-        text(key) { return row[key]; }
-    }
-}
-```
-However, for other use-cases, you might want to delay this lookup until later, and have `getRecord()` just store the `name` until later.
-```js
-function getRecord({name}) { 
-    return new DelayedRecord(name); 
-}
-class DelayedRecord { 
-    constructor(name) {
-        this.name = name;
-    }
-    async text(key) {
-        return db.fetchCell(this.name, key);
-    }
-}

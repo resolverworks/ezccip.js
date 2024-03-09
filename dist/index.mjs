@@ -48,11 +48,7 @@ function asciiize(s) {
 class History {
 	constructor(level) {
 		this.level = level; // integer, counts down
-		this.args = [];
 		this.children = [];
-	}
-	add(arg) {
-		this.args.push(arg);
 	}
 	enter() {
 		let {level, children: v} = this;
@@ -62,10 +58,10 @@ class History {
 		return child;
 	}
 	toString() {
-		let {data, frag, args: a, error, children: v} = this;
+		let {data, frag, show, error, children: v} = this;
 		let desc = frag ? frag.name : `<${data ? data.slice(0, 10) : 'null'}>`;
 		desc += '(';
-		if (a.length) desc += a.map(x => typeof x === 'string' ? asciiize(x) : x).join(',');
+		if (show) desc += show.map(x => typeof x === 'string' ? asciiize(x) : x).join(',');
 		desc += ')';
 		if (v.length) desc += `^${v.length} [${v.join(' ')}]`;
 		if (error)    desc += `<${error}>`;
@@ -75,7 +71,7 @@ class History {
 
 const ABI_CODER = ethers.AbiCoder.defaultAbiCoder();
 const MULTICALL = 'multicall';
-const RESOLVER_ABI = new ethers.Interface([
+const RESOLVE_ABI = new ethers.Interface([
 	'function name(bytes32 node) external view returns (string)',
 	'function addr(bytes32 node) external view returns (address)',
 	'function addr(bytes32 node, uint256 type) external view returns (bytes)',
@@ -85,12 +81,13 @@ const RESOLVER_ABI = new ethers.Interface([
 	'function ABI(bytes32 node, uint256 types) external view returns (uint256 type, bytes memory data)',
 	'function multicall(bytes[] calls) external view returns (bytes[])',
 ]);
-RESOLVER_ABI.forEachFunction(x => x.__name = x.format());
+RESOLVE_ABI.forEachFunction(x => x.__name = x.format());
 
 class EZCCIP {
 	constructor() {
 		this.impls = new Map();
 		this.register('multicall(bytes[]) external view returns (bytes[])', async ([calls], context, history) => {
+			history.show = false;
 			return [await Promise.all(calls.map(x => this.handleCall(x, context, history.enter()).catch(encode_error)))];
 		});
 	}
@@ -102,9 +99,9 @@ class EZCCIP {
 			// note: this doesn't normalize
 			// incoming name should be normalized
 			// your database should be normalized
-			history.add(name);
+			history.show = [name];
 			let record = history.record = await fn(name, context);
-			return await resolveCall(record, data, multicall, history);
+			return await callRecord(record, data, multicall, history);
 			// returns without additional encoding 
 			// since: abi.decode(abi.encode(x)) == x
 		});
@@ -167,7 +164,9 @@ class EZCCIP {
 			const {abi, frag, fn} = impl;
 			history.abi = abi;
 			history.frag = frag;
-			let res = await fn(abi.decodeFunctionData(frag, calldata), context, history);
+			let args = abi.decodeFunctionData(frag, calldata);
+			history.args = history.show = args;
+			let res = await fn(args, context, history);
 			if (Array.isArray(res)) res = abi.encodeFunctionResult(frag, res);
 			return res;
 		} catch (err) {
@@ -177,22 +176,27 @@ class EZCCIP {
 	}
 }
 
-async function resolveCall(record, calldata, multicall = true, history) {	
+async function callRecord(record, calldata, multicall = true, history) {	
 	try {
 		if (history) history.calldata = calldata;
 		let method = calldata.slice(0, 10);
-		let frag = RESOLVER_ABI.getFunction(method);
+		let frag = RESOLVE_ABI.getFunction(method);
 		if (!frag || (!multicall && frag.name === MULTICALL)) throw error_with(`unsupported resolve() method: ${method}`, {calldata});
 		if (history) {
-			history.abi = RESOLVER_ABI;
+			history.abi = RESOLVE_ABI;
 			history.frag = frag;
 		}
-		let args = RESOLVER_ABI.decodeFunctionData(frag, calldata);
+		let args = RESOLVE_ABI.decodeFunctionData(frag, calldata);
+		if (history) {
+			history.args = args;
+			history.show = args.slice(1);
+		}
 		let res;
 		switch (frag.__name) {
 			case 'multicall(bytes[])': {
+				history.show = false;
 				// https://github.com/ensdomains/ens-contracts/blob/staging/contracts/resolvers/IMulticallable.sol
-				res = [await Promise.all(args.calls.map(x => resolveCall(record, x, true, history?.enter()).catch(encode_error)))];
+				res = [await Promise.all(args.calls.map(x => callRecord(record, x, true, history?.enter()).catch(encode_error)))];
 				break;
 			}
 			case 'addr(bytes32)': {
@@ -205,8 +209,7 @@ async function resolveCall(record, calldata, multicall = true, history) {
 				// https://eips.ethereum.org/EIPS/eip-2304
 				let type = Number(args.type); // TODO: BigInt => number
 				if (history) {
-					history.add(addr_type_str(type));
-					history.type = type;
+					history.show = [addr_type_str(type)];
 				}
 				let value = await record?.addr?.(type);
 				res = [value || '0x'];
@@ -214,12 +217,7 @@ async function resolveCall(record, calldata, multicall = true, history) {
 			}
 			case 'text(bytes32,string)': {
 				// https://eips.ethereum.org/EIPS/eip-634
-				let {key} = args;
-				if (history) {
-					history.add(key);
-					history.key = key;
-				}
-				let value = await record?.text?.(key);
+				let value = await record?.text?.(args.key);
 				res = [value || ''];
 				break;
 			}
@@ -246,8 +244,7 @@ async function resolveCall(record, calldata, multicall = true, history) {
 				// https://docs.ens.domains/ens-improvement-proposals/ensip-4-support-for-contract-abis
 				let types = Number(args.types);
 				if (history) {
-					history.add(abi_types_str(types));
-					history.types = types;
+					history.show = [abi_types_str(types)];
 				}
 				let value = await record?.ABI?.(types);
 				if (is_bytes_like(value)) return value; // support raw encoding
@@ -255,7 +252,7 @@ async function resolveCall(record, calldata, multicall = true, history) {
 				break;
 			}
 		}
-		return RESOLVER_ABI.encodeFunctionResult(frag, res);
+		return RESOLVE_ABI.encodeFunctionResult(frag, res);
 	} catch (err) {
 		if (history) history.error = err;
 		throw err;
@@ -283,4 +280,4 @@ function abi_types_str(types) {
 	return v.join('|');
 }
 
-export { EZCCIP, RESOLVER_ABI, asciiize, error_with, is_bytes_like, is_phex, labels_from_dns_encoded, resolveCall };
+export { EZCCIP, RESOLVE_ABI, asciiize, callRecord, error_with, is_bytes_like, is_phex, labels_from_dns_encoded };

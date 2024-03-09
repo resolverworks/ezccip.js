@@ -9,7 +9,7 @@ test('history', async t => {
 	await t.test('frag', () => {
 		let h = new History(1);
 		h.frag = {name: 'f'};
-		h.add(1);
+		h.show = [1];
 		assert.equal(h.toString(), 'f(1)');
 	});
 	await t.test('error', () => {

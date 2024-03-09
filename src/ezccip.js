@@ -20,6 +20,7 @@ export class EZCCIP {
 	constructor() {
 		this.impls = new Map();
 		this.register('multicall(bytes[]) external view returns (bytes[])', async ([calls], context, history) => {
+			history.show = false;
 			return [await Promise.all(calls.map(x => this.handleCall(x, context, history.enter()).catch(encode_error)))];
 		});
 	}
@@ -31,7 +32,7 @@ export class EZCCIP {
 			// note: this doesn't normalize
 			// incoming name should be normalized
 			// your database should be normalized
-			history.add(name);
+			history.show = [name];
 			let record = history.record = await fn(name, context);
 			return await callRecord(record, data, multicall, history);
 			// returns without additional encoding 
@@ -96,7 +97,9 @@ export class EZCCIP {
 			const {abi, frag, fn} = impl;
 			history.abi = abi;
 			history.frag = frag;
-			let res = await fn(abi.decodeFunctionData(frag, calldata), context, history);
+			let args = abi.decodeFunctionData(frag, calldata);
+			history.args = history.show = args;
+			let res = await fn(args, context, history);
 			if (Array.isArray(res)) res = abi.encodeFunctionResult(frag, res);
 			return res;
 		} catch (err) {
@@ -117,9 +120,14 @@ export async function callRecord(record, calldata, multicall = true, history) {
 			history.frag = frag;
 		}
 		let args = RESOLVE_ABI.decodeFunctionData(frag, calldata);
+		if (history) {
+			history.args = args;
+			history.show = args.slice(1);
+		}
 		let res;
 		switch (frag.__name) {
 			case 'multicall(bytes[])': {
+				history.show = false;
 				// https://github.com/ensdomains/ens-contracts/blob/staging/contracts/resolvers/IMulticallable.sol
 				res = [await Promise.all(args.calls.map(x => callRecord(record, x, true, history?.enter()).catch(encode_error)))];
 				break;
@@ -134,8 +142,7 @@ export async function callRecord(record, calldata, multicall = true, history) {
 				// https://eips.ethereum.org/EIPS/eip-2304
 				let type = Number(args.type); // TODO: BigInt => number
 				if (history) {
-					history.add(addr_type_str(type));
-					history.type = type;
+					history.show = [addr_type_str(type)];
 				}
 				let value = await record?.addr?.(type);
 				res = [value || '0x'];
@@ -143,12 +150,7 @@ export async function callRecord(record, calldata, multicall = true, history) {
 			}
 			case 'text(bytes32,string)': {
 				// https://eips.ethereum.org/EIPS/eip-634
-				let {key} = args;
-				if (history) {
-					history.add(key);
-					history.key = key;
-				}
-				let value = await record?.text?.(key);
+				let value = await record?.text?.(args.key);
 				res = [value || ''];
 				break;
 			}
@@ -175,8 +177,7 @@ export async function callRecord(record, calldata, multicall = true, history) {
 				// https://docs.ens.domains/ens-improvement-proposals/ensip-4-support-for-contract-abis
 				let types = Number(args.types);
 				if (history) {
-					history.add(abi_types_str(types));
-					history.types = types;
+					history.show = [abi_types_str(types)];
 				}
 				let value = await record?.ABI?.(types);
 				if (is_bytes_like(value)) return value; // support raw encoding
