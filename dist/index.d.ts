@@ -1,4 +1,4 @@
-import type {SigningKey, BytesLike, BigNumberish, Interface} from 'ethers';
+import type {SigningKey, BytesLike, BigNumberish, Interface, FunctionFragment, Result} from 'ethers';
 
 type HexString = string;
 type UndefNull  = null | undefined; 
@@ -13,17 +13,30 @@ export interface Record {
 }
 
 export type History = {
-	readonly level: number;
-	readonly actions: readonly any[];
-	readonly children: readonly History[];
-	readonly error?: any;
-	add(a: any): void;
+	level: number;
+	next: History;
+	children: History[];
+	error?: any;
+	calldata?: HexString;
+	frag?: FunctionFragment;
+	args?: any[];
+	show?: any[];
 	enter(): History;
+	then(): History;
 }
 
+type CallContext = {
+	sender: HexString;
+	calldata: HexString;
+	resolver: HexString;
+	[key: string]: any;
+}
+type CCIPReadFunction = (args: Result, context: CallContext, history: History) => Promise<HexString | any[]>; 
+type ENSIP10Function = (name: string, context: CallContext) => Promise<Record | UndefNull>;
+
 export class EZCCIP {
-	enableENSIP10(getRecord: (name: string, context: Object) => Promise<Record | UndefNull>, options?: {multicall?: boolean}): void;
-	register(abi: string | string[] | Interface, impl: Function | {[name: string]: Function}): void;
+	enableENSIP10(get: ENSIP10Function, options?: {multicall?: boolean}): void;
+	register(abi: string | string[] | Interface, impl: CCIPReadFunction | {[name: string]: CCIPReadFunction}): void;
 	handleRead(sender: HexString, calldata: HexString, config: {
 		signingKey: SigningKey;
 		resolver: HexString;

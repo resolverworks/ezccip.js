@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {History} from '../src/History.js';
+import {History} from '../src/ezccip.js';
 
 test('history', async t => {
 	await t.test('0 w/enter^1', () => assert.throws(() => new History(0).enter()));
@@ -17,5 +17,10 @@ test('history', async t => {
 		h.frag = {name: 'f'};
 		h.error = 'wtf';
 		assert.equal(h.toString(), 'f()<wtf>');
+	});
+	await t.test('then()', () => {
+		let h = new History(0);
+		h.then();
+		assert.equal(h.toString(), '<null>().<null>()')
 	});
 });

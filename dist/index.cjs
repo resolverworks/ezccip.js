@@ -51,10 +51,13 @@ class History {
 	constructor(level) {
 		this.level = level; // integer, counts down
 		this.children = [];
-		this.calldata = null;
-		this.frag = null;
-		this.args = null;
-		this.show = null;
+		this.calldata = undefined;
+		this.next = undefined;
+		this.frag = undefined;
+		this.abi = undefined;
+		this.args = undefined;
+		this.show = undefined;
+		this.record = undefined;
 	}
 	enter() {
 		let {level, children: v} = this;
@@ -63,14 +66,18 @@ class History {
 		v.push(child);
 		return child;
 	}
+	then() {
+		return this.next = new History(this.level);
+	}
 	toString() {
-		let {data, frag, show, error, children: v} = this;
+		let {data, frag, show, error, children: v, next} = this;
 		let desc = frag ? frag.name : `<${data ? data.slice(0, 10) : 'null'}>`;
 		desc += '(';
 		if (show) desc += show.map(x => typeof x === 'string' ? asciiize(x) : x).join(',');
 		desc += ')';
 		if (v.length) desc += `^${v.length} [${v.join(' ')}]`;
-		if (error)    desc += `<${error}>`;
+		if (error) desc += `<${error}>`;
+		if (next) desc += `.${next}`;
 		return desc;
 	}
 }
@@ -99,7 +106,7 @@ class EZCCIP {
 			return [await Promise.all(calls.map(x => this.handleCall(x, context, history.enter()).catch(encode_error)))];
 		});
 	}
-	enableENSIP10(fn, {multicall = true} = {}) {
+	enableENSIP10(get, {multicall = true} = {}) {
 		// https://docs.ens.domains/ensip/10
 		this.register('resolve(bytes, bytes) external view returns (bytes)', async([dnsname, data], context, history) => {
 			let labels = labels_from_dns_encoded(ethers.ethers.getBytes(dnsname));
@@ -108,10 +115,10 @@ class EZCCIP {
 			// incoming name should be normalized
 			// your database should be normalized
 			history.show = [name];
-			let record = history.record = await fn(name, context);
-			return await callRecord(record, data, multicall, history);
-			// returns without additional encoding 
-			// since: abi.decode(abi.encode(x)) == x
+			let record = await get(name, context);
+			if (record) history.record = record;
+			return callRecord(record, data, multicall, history.then());
+			// returns raw since: abi.decode(abi.encode(x)) == x
 		});
 	}
 	register(abi0, impl) {
@@ -202,12 +209,12 @@ async function callRecord(record, calldata, multicall = true, history) {
 		let args = RESOLVE_ABI.decodeFunctionData(frag, calldata);
 		if (history) {
 			history.args = args;
-			history.show = args.slice(1);
+			history.show = args.slice(1); // drop namehash
 		}
 		let res;
 		switch (frag.__name) {
 			case 'multicall(bytes[])': {
-				history.show = false;
+				if (history) history.show = false;
 				// https://github.com/ensdomains/ens-contracts/blob/staging/contracts/resolvers/IMulticallable.sol
 				res = [await Promise.all(args.calls.map(x => callRecord(record, x, true, history?.enter()).catch(encode_error)))];
 				break;
@@ -221,9 +228,7 @@ async function callRecord(record, calldata, multicall = true, history) {
 			case 'addr(bytes32,uint256)': {
 				// https://eips.ethereum.org/EIPS/eip-2304
 				let type = Number(args.type); // TODO: BigInt => number
-				if (history) {
-					history.show = [addr_type_str(type)];
-				}
+				if (history) history.show = [addr_type_str(type)];
 				let value = await record?.addr?.(type);
 				res = [value || '0x'];
 				break;
@@ -256,9 +261,7 @@ async function callRecord(record, calldata, multicall = true, history) {
 			case 'ABI(bytes32,uint256)': {
 				// https://docs.ens.domains/ens-improvement-proposals/ensip-4-support-for-contract-abis
 				let types = Number(args.types);
-				if (history) {
-					history.show = [abi_types_str(types)];
-				}
+				if (history) history.show = [abi_types_str(types)];
 				let value = await record?.ABI?.(types);
 				if (is_bytes_like(value)) return value; // support raw encoding
 				res = value ? [value.type, value.data] : [0, '0x'];
