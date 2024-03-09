@@ -33,20 +33,18 @@ type CallContext = {
 }
 type CCIPReadFunction = (args: Result, context: CallContext, history: History) => Promise<HexString | any[]>; 
 type ENSIP10Function = (name: string, context: CallContext) => Promise<Record | UndefNull>;
+type EZCCIPConfig = {
+	signingKey: SigningKey;
+	resolver: HexString;
+	ttlSec?: number;
+	recursionLimit?: number;
+	[key: string]: any;
+};
 
 export class EZCCIP {
 	enableENSIP10(get: ENSIP10Function, options?: {multicall?: boolean}): void;
 	register(abi: string | string[] | Interface, impl: CCIPReadFunction | {[name: string]: CCIPReadFunction}): void;
-	handleRead(sender: HexString, calldata: HexString, config: {
-		signingKey: SigningKey;
-		resolver: HexString;
-		ttlSec?: number;
-		recursionLimit?: number;
-		[key: string]: any;
-	}): Promise<{
-		data: HexString;
-		history: History;
-	}>;
+	handleRead(sender: HexString, calldata: HexString, config: EZCCIPConfig): Promise<{data: HexString, history: History}>;
 }
 
 export function callRecord(record: Record | UndefNull, calldata: HexString, multicall?: boolean, history?: History): string;
