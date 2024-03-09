@@ -3,8 +3,9 @@ Turnkey CCIP-Read Handler for ENS
 
 `npm i @resolverworks/ezccip`
 * see [types](./dist/index.d.ts) / uses [ethers](https://github.com/ethers-io/ethers.js/)
-* works with [**TheOffchainResolver.sol**](https://github.com/resolverworks/TheOffchainResolver.sol) and [**enson.js**](https://github.com/resolverworks/enson.js)
+* implements [**TheOffchainResolver.sol**](https://github.com/resolverworks/TheOffchainResolver.sol) protocol
 * used by [**TheOffchainGateway.js**](https://github.com/resolverworks/TheOffchainGateway.js)
+* works with [**enson.js**](https://github.com/resolverworks/enson.js)
 * supports *Multicall-over-CCIP-Read*
     * `resolve(multicall(...))`
     * `multicall(resolve(...))`
@@ -57,10 +58,10 @@ reply.json({data});
         > `'s'`: `0x9Ec7f2ce83fcDF589487303fA9984942EF80Cb39` &larr; Sepolia,\
         > `'g'`: `0x9b87849Aa21889343b6fB1E146f9F734ecFA9982` &larr; Goerli\
         > }
-    * Those `keys` correspond to the TOR deployment on each chain.
+    * Those `keys` correspond to the [TOR deployment](https://github.com/resolverworks/TheOffchainResolver.sol) on each chain.
     * The above configuration implies following `CONTEXT`:
         * Mainnet: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd http://localhost:8016/`
-        * Sepolia: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd http://localhost:8016/s`
+        * Sepolia: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd http://localhost:8016/s` &larr; `/key`
 1. set [`CONTEXT`](https://github.com/resolverworks/TheOffchainResolver.sol#context-format)
 
 ## Examples
