@@ -1,6 +1,7 @@
 // check exports
 import {
 	EZCCIP, 
+	History,
 	callRecord,
 	error_with,
 	asciiize,

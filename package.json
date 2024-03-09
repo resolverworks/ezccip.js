@@ -1,23 +1,6 @@
 {
 	"name": "@resolverworks/ezccip",
 	"version": "0.0.5",
-	"description": "Turnkey CCIP-Read Handler",
-	"types": "./dist/index.d.ts",
-	"main": "./dist/index.cjs",
-	"module": "./dist/index.mjs",
-	"files": [
-		"./dist"
-	],
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/resolverworks/ezccip.js.git"
-	},
-	"license": "MIT",
-	"bugs": {
-		"url": "https://github.com/resolverworks/ezccip.js/issues"
-	},
-	"homepage": "https://github.com/resolverworks/ezccip.js#readme",
-	"author": "raffy.eth",
 	"type": "module",
 	"scripts": {
 		"test": "node test/all.js",
@@ -30,6 +13,23 @@
 	"devDependencies": {
 		"rollup": "^4.11.0"
 	},
+	"types": "./dist/index.d.ts",
+	"module": "./dist/index.mjs",
+	"main": "./dist/index.cjs",
+	"files": [
+		"./dist"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/resolverworks/ezccip.js.git"
+	},
+	"bugs": {
+		"url": "https://github.com/resolverworks/ezccip.js/issues"
+	},
+	"homepage": "https://github.com/resolverworks/ezccip.js#readme",
+	"author": "raffy.eth",
+	"license": "MIT",
+	"description": "Turnkey CCIP-Read Handler",
 	"keywords": [
 		"ENS",
 		"Ethereum Naming System",

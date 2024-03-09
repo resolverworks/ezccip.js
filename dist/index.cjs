@@ -283,6 +283,7 @@ function abi_types_str(types) {
 }
 
 exports.EZCCIP = EZCCIP;
+exports.History = History;
 exports.RESOLVE_ABI = RESOLVE_ABI;
 exports.asciiize = asciiize;
 exports.callRecord = callRecord;

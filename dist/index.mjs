@@ -280,4 +280,4 @@ function abi_types_str(types) {
 	return v.join('|');
 }
 
-export { EZCCIP, RESOLVE_ABI, asciiize, callRecord, error_with, is_bytes_like, is_phex, labels_from_dns_encoded };
+export { EZCCIP, History, RESOLVE_ABI, asciiize, callRecord, error_with, is_bytes_like, is_phex, labels_from_dns_encoded };
