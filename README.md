@@ -20,17 +20,12 @@ let ezccip = new EZCCIP();
 // implement a wildcard ENSIP-10 resolver
 ezccip.enableENSIP10(async (name, context) => {
     return {
-        text(key) {
+        async text(key) {
             switch (key) {
                 case 'name': return 'Raffy';
                 case 'avatar': return 'https://raffy.antistupid.com/ens.jpg';
             }
         },
-        addr(type) {
-            switch (type) {
-                case 60: return '0x51050ec063d393217b436747617ad1c2285aeeee';
-            }
-        }
     };
 });
 
