@@ -1,19 +1,19 @@
 import {ethers} from 'ethers';
 import {EZCCIP} from '../src/ezccip.js'; 
 import {serve} from '../src/serve.js'; 
-import {test} from 'node:test';
+import {test, after} from 'node:test';
 import assert from 'node:assert/strict';
 
 test('serve w/custom function', async () => {
-
 	let args = [69n, 420n];
 	let fn = ([a, b]) => [a * 1000n + b];
 	let abi = new ethers.Interface(['function f(uint256, uint256) returns (uint256)']);
 
 	let ezccip = new EZCCIP();
 	ezccip.register(abi, fn);
-	let ccip = await serve(ezccip);
-
+	let ccip = await serve(ezccip, {log: false});
+	after(() => ccip.http.close());
+	
 	let frag = abi.getFunction('f');
 	let res = await fetch(ccip.endpoint, {
 		method: 'POST',
@@ -30,7 +30,4 @@ test('serve w/custom function', async () => {
 	let result = abi.decodeFunctionResult(frag, answer);
 	
 	assert.deepEqual(result.toArray(), fn(args));
-	
-	ccip.http.close();
-
 });

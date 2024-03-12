@@ -49,7 +49,7 @@ export function serve(handler: ENSIP10Function | EZCCIP, options?: {
 	log?: (...a: any) => any; // default console.log w/date, false to disable
 	port?: number; // default random open
 	signingKey?: SigningKey; // default random
-	resolvers?: {[key: string]: HexString}; // default 0x0
+	resolvers?: HexString | {[key: string]: HexString}; // default 0x0
 	// remainder included in context
 } & CallContextExtra): Promise<{
 	http: { close(): void };

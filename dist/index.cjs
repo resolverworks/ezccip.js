@@ -285,15 +285,25 @@ function abi_types_str(types) {
 	return v.join('|');
 }
 
-function serve(ezccip, {port, resolvers, log, signingKey, ...a} = {}) {
+const ANY_KEY = '*';
+
+function serve(ezccip, {port, resolvers = ethers.ethers.ZeroAddress, log, signingKey, ...a} = {}) {
 	if (ezccip instanceof Function) {
 		let temp = new EZCCIP();
 		temp.enableENSIP10(ezccip);
 		ezccip = temp;
 	}
-	if (!resolvers) resolvers = {'*': ethers.ethers.ZeroAddress};
-	if (!log && log !== false) log = (...a) => console.log(new Date(), ...a);
-	if (!signingKey) signingKey = new ethers.ethers.SigningKey(ethers.ethers.randomBytes(32));
+	if (typeof resolvers === 'string') {
+		resolvers = {[ANY_KEY]: resolvers};
+	}
+	if (log === false) {
+		log = undefined;
+	} else if (!log) {
+		log = (...a) => console.log(new Date(), ...a);
+	}
+	if (!signingKey) {
+		signingKey = new ethers.ethers.SigningKey(ethers.ethers.randomBytes(32));
+	}
 	return new Promise(ful => {
 		let http = node_http.createServer(async (req, reply) => {
 			let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
@@ -304,7 +314,7 @@ function serve(ezccip, {port, resolvers, log, signingKey, ...a} = {}) {
 					case 'OPTIONS': return reply.setHeader('access-control-allow-headers', '*').end();
 					case 'POST': {
 						let key = url.slice(1);
-						let resolver = resolvers[key] ?? resolvers['*'];
+						let resolver = resolvers[key] ?? resolvers[ANY_KEY];
 						if (!resolver) throw error_with('unknown resolver', {status: 404, key});
 						let v = [];
 						for await (let x of req) v.push(x);
