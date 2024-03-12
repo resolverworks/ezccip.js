@@ -4,7 +4,7 @@
 	"type": "module",
 	"scripts": {
 		"test": "node test/all.js",
-		"start": "node test/server.js",
+		"start": "node test/demo.js",
 		"build": "rollup -c"
 	},
 	"dependencies": {

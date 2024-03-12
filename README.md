@@ -45,15 +45,13 @@ reply.json({data});
 
 ## Demo
 
-[`server.js`](./test/server.js)
+
 1. `npm run start`
-    * The demo server will print:
-        > Signer: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd`\
-        > Listening on `8016` {\
-        > ` ''`: `0x828ec5bDe537B8673AF98D77bCB275ae1CA26D1f` &larr; Mainnet\
-        > `'s'`: `0x9Ec7f2ce83fcDF589487303fA9984942EF80Cb39` &larr; Sepolia,\
-        > `'g'`: `0x9b87849Aa21889343b6fB1E146f9F734ecFA9982` &larr; Goerli\
-        > }
+    * The [`demo.js`](./test/demo.js) server will print:
+        > `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd http://localhost:8016`\
+        >&nbsp; `""` &rarr; `0x828ec5bDe537B8673AF98D77bCB275ae1CA26D1f` &larr; Mainnet\
+        > `"s"` &rarr; `0x9Ec7f2ce83fcDF589487303fA9984942EF80Cb39` &larr; Sepolia\
+        >`"g"` &rarr; `0x9b87849Aa21889343b6fB1E146f9F734ecFA9982` &larr; Goerli
     * Those `keys` correspond to the [TOR deployment](https://github.com/resolverworks/TheOffchainResolver.sol) on each chain.
     * The above configuration implies following `CONTEXT`:
         * Mainnet: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd http://localhost:8016/`

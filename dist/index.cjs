@@ -328,7 +328,7 @@ function serve(ezccip, {port, resolvers, log, signingKey, ...a} = {}) {
 			let endpoint = `http://localhost:${port}`;
 			let signer = ethers.ethers.computeAddress(signingKey);
 			let context = `${signer} ${endpoint}`;
-			log?.('Ready!', {context});
+			log?.('Ready!', {context, resolvers});
 			ful({http, port, endpoint, signer, context});
 		});
 	});
