@@ -1,17 +1,10 @@
-import {is_phex, is_bytes_like, labels_from_dns_encoded, error_with, asciiize} from './utils.js';
+import {labels_from_dns_encoded, error_with, asciiize} from './utils.js';
 import {ethers} from 'ethers';
 
 export class History {
 	constructor(level) {
 		this.level = level; // integer, counts down
 		this.children = [];
-		this.calldata = undefined;
-		this.next = undefined;
-		this.frag = undefined;
-		this.abi = undefined;
-		this.args = undefined;
-		this.show = undefined;
-		this.record = undefined;
 	}
 	enter() {
 		let {level, children: v} = this;
@@ -20,12 +13,17 @@ export class History {
 		v.push(child);
 		return child;
 	}
+	head() {
+		let head = this;
+		while (head.next) head = head.next;
+		return head;
+	}
 	then() {
 		return this.next = new History(this.level);
 	}
 	toString() {
-		let {data, frag, show, error, children: v, next} = this;
-		let desc = frag ? frag.name : `<${data ? data.slice(0, 10) : 'null'}>`;
+		let {data, name, show, error, children: v, next} = this;
+		let desc = name ?? `<${data ? data.slice(0, 10) : 'null'}>`;
 		desc += '(';
 		if (show) desc += show.map(x => typeof x === 'string' ? asciiize(x) : x).join(',');
 		desc += ')';
@@ -69,7 +67,7 @@ export class EZCCIP {
 			// incoming name should be normalized
 			// your database should be normalized
 			history.show = [name];
-			let record = await get(name, context);
+			let record = await get(name, context, history);
 			if (record) history.record = record;
 			return callRecord(record, data, multicall, history.then());
 			// returns raw since: abi.decode(abi.encode(x)) == x
@@ -106,8 +104,8 @@ export class EZCCIP {
 	}
 	// https://eips.ethereum.org/EIPS/eip-3668
 	async handleRead(sender, calldata, {signingKey, resolver, recursionLimit = 2, ttlSec = 60, ...context}) {
-		if (!is_phex(sender) || sender.length !== 42) throw with_error('expected sender address', {status: 400});
-		if (!is_phex(calldata) || calldata.length < 10) throw with_error('expected calldata', {status: 400});
+		if (!ethers.isHexString(sender) || sender.length !== 42) throw with_error('expected sender address', {status: 400});
+		if (!ethers.isHexString(calldata) || calldata.length < 10) throw with_error('expected calldata', {status: 400});
 		calldata = calldata.toLowerCase();
 		context.sender = sender.toLowerCase();
 		context.calldata = calldata;
@@ -131,9 +129,8 @@ export class EZCCIP {
 			let method = calldata.slice(0, 10);
 			let impl = this.impls.get(method);
 			if (!impl || (!history.level && impl.name === MULTICALL)) throw new Error(`unsupported ccip method: ${method}`);
-			const {abi, frag, fn} = impl;
-			history.abi = abi;
-			history.frag = frag;
+			const {abi, frag, fn} = history.impl = impl;
+			history.name = frag.name;
 			let args = abi.decodeFunctionData(frag, calldata);
 			history.args = history.show = args;
 			let res = await fn(args, context, history);
@@ -157,8 +154,7 @@ export async function callRecord(record, calldata, multicall = true, history) {
 		let frag = RESOLVE_ABI.getFunction(method);
 		if (!frag || (!multicall && frag.name === MULTICALL)) throw error_with(`unsupported resolve() method: ${method}`, {calldata});
 		if (history) {
-			history.abi = RESOLVE_ABI;
-			history.frag = frag;
+			history.name = frag.name;
 		}
 		let args = RESOLVE_ABI.decodeFunctionData(frag, calldata);
 		if (history) {
@@ -208,7 +204,7 @@ export async function callRecord(record, calldata, multicall = true, history) {
 			case 'pubkey(bytes32)': {
 				// https://github.com/ethereum/EIPs/pull/619
 				let value = await record?.pubkey?.();
-				if (is_bytes_like(value)) return value; // support raw encoding
+				if (ethers.isBytesLike(value)) return value; // support raw encoding
 				res = value ? [value.x, value.y] : [0, 0];
 				break;
 			}
@@ -217,7 +213,7 @@ export async function callRecord(record, calldata, multicall = true, history) {
 				let types = Number(args.types);
 				if (history) history.show = [abi_types_str(types)];
 				let value = await record?.ABI?.(types);
-				if (is_bytes_like(value)) return value; // support raw encoding
+				if (ethers.isBytesLike(value)) return value; // support raw encoding
 				res = value ? [value.type, value.data] : [0, '0x'];
 				break;
 			}

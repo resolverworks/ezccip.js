@@ -2,14 +2,15 @@
 Turnkey CCIP-Read Handler for ENS
 
 `npm i @resolverworks/ezccip`
-* see [types](./dist/index.d.ts) / uses [ethers](https://github.com/ethers-io/ethers.js/)
-* implements [**TheOffchainResolver.sol**](https://github.com/resolverworks/TheOffchainResolver.sol) protocol
-* used by [**TheOffchainGateway.js**](https://github.com/resolverworks/TheOffchainGateway.js)
-* works with [**enson.js**](https://github.com/resolverworks/enson.js)
+* see [**types**](./dist/index.d.ts) / uses [ethers](https://github.com/ethers-io/ethers.js/)
+* implements [TheOffchainResolver.sol](https://github.com/resolverworks/TheOffchainResolver.sol) protocol
+* used by [TheOffchainGateway.js](https://github.com/resolverworks/TheOffchainGateway.js)
+* works with [enson.js](https://github.com/resolverworks/enson.js)
 * supports *Multicall-over-CCIP-Read*
     * `resolve(multicall(...))`
     * `multicall(resolve(...))`
     * `multicall(resolve(multicall(...)), ...)`
+* use [`serve()`](./src/serve.js) to quickly launch a server
 
 ```js
 import {EZCCIP} from '@resolverworks/ezccip';

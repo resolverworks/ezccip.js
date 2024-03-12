@@ -1,6 +1,6 @@
 {
 	"name": "@resolverworks/ezccip",
-	"version": "0.0.6",
+	"version": "0.0.7",
 	"type": "module",
 	"scripts": {
 		"test": "node test/all.js",
@@ -34,6 +34,8 @@
 		"ENS",
 		"Ethereum Naming System",
 		"Ethereum",
+		"EIP-3668",
+		"ENSIP-10",
 		"CCIP",
 		"CCIP-Read",
 		"Offchain"

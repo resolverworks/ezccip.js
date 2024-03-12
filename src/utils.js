@@ -11,14 +11,6 @@ export function error_with(message, params, cause) {
 	return Object.assign(error, params);
 }
 
-// true if even-length 0x-prefixed mixed-case hex string
-export function is_phex(s) {
-	return typeof s === 'string' && !(s.length&1) && /^0x[0-9a-f]*$/i.test(s);
-}
-export function is_bytes_like(x) {
-	return x instanceof Uint8Array || is_phex(x);
-}
-
 // dns-encoded name to array of unicode labels
 // inverse of ethers.dnsEncode()
 export function labels_from_dns_encoded(v) {

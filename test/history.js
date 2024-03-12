@@ -5,16 +5,16 @@ import {History} from '../src/ezccip.js';
 test('history', async t => {
 	await t.test('0 w/enter^1', () => assert.throws(() => new History(0).enter()));
 	await t.test('1 w/enter^2', () => assert.throws(() => new History(1).enter().enter()));
-	await t.test('no frag', () => assert.equal(new History(1).toString(), '<null>()'));
-	await t.test('frag', () => {
+	await t.test('no name', () => assert.equal(new History(1).toString(), '<null>()'));
+	await t.test('name', () => {
 		let h = new History(1);
-		h.frag = {name: 'f'};
+		h.name = 'f';
 		h.show = [1];
 		assert.equal(h.toString(), 'f(1)');
 	});
-	await t.test('error', () => {
+	await t.test('name + error', () => {
 		let h = new History(1);
-		h.frag = {name: 'f'};
+		h.name = 'f';
 		h.error = 'wtf';
 		assert.equal(h.toString(), 'f()<wtf>');
 	});

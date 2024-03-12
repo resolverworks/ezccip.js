@@ -1,6 +1,7 @@
 'use strict';
 
 var ethers = require('ethers');
+var node_http = require('node:http');
 
 function error_with(message, params, cause) {
 	let error;
@@ -11,14 +12,6 @@ function error_with(message, params, cause) {
 		error = new Error(message);
 	}
 	return Object.assign(error, params);
-}
-
-// true if even-length 0x-prefixed mixed-case hex string
-function is_phex(s) {
-	return typeof s === 'string' && !(s.length&1) && /^0x[0-9a-f]*$/i.test(s);
-}
-function is_bytes_like(x) {
-	return x instanceof Uint8Array || is_phex(x);
 }
 
 // dns-encoded name to array of unicode labels
@@ -51,13 +44,6 @@ class History {
 	constructor(level) {
 		this.level = level; // integer, counts down
 		this.children = [];
-		this.calldata = undefined;
-		this.next = undefined;
-		this.frag = undefined;
-		this.abi = undefined;
-		this.args = undefined;
-		this.show = undefined;
-		this.record = undefined;
 	}
 	enter() {
 		let {level, children: v} = this;
@@ -66,12 +52,17 @@ class History {
 		v.push(child);
 		return child;
 	}
+	head() {
+		let head = this;
+		while (head.next) head = head.next;
+		return head;
+	}
 	then() {
 		return this.next = new History(this.level);
 	}
 	toString() {
-		let {data, frag, show, error, children: v, next} = this;
-		let desc = frag ? frag.name : `<${data ? data.slice(0, 10) : 'null'}>`;
+		let {data, name, show, error, children: v, next} = this;
+		let desc = name ?? `<${data ? data.slice(0, 10) : 'null'}>`;
 		desc += '(';
 		if (show) desc += show.map(x => typeof x === 'string' ? asciiize(x) : x).join(',');
 		desc += ')';
@@ -115,7 +106,7 @@ class EZCCIP {
 			// incoming name should be normalized
 			// your database should be normalized
 			history.show = [name];
-			let record = await get(name, context);
+			let record = await get(name, context, history);
 			if (record) history.record = record;
 			return callRecord(record, data, multicall, history.then());
 			// returns raw since: abi.decode(abi.encode(x)) == x
@@ -152,8 +143,8 @@ class EZCCIP {
 	}
 	// https://eips.ethereum.org/EIPS/eip-3668
 	async handleRead(sender, calldata, {signingKey, resolver, recursionLimit = 2, ttlSec = 60, ...context}) {
-		if (!is_phex(sender) || sender.length !== 42) throw with_error('expected sender address', {status: 400});
-		if (!is_phex(calldata) || calldata.length < 10) throw with_error('expected calldata', {status: 400});
+		if (!ethers.ethers.isHexString(sender) || sender.length !== 42) throw with_error('expected sender address', {status: 400});
+		if (!ethers.ethers.isHexString(calldata) || calldata.length < 10) throw with_error('expected calldata', {status: 400});
 		calldata = calldata.toLowerCase();
 		context.sender = sender.toLowerCase();
 		context.calldata = calldata;
@@ -177,9 +168,8 @@ class EZCCIP {
 			let method = calldata.slice(0, 10);
 			let impl = this.impls.get(method);
 			if (!impl || (!history.level && impl.name === MULTICALL)) throw new Error(`unsupported ccip method: ${method}`);
-			const {abi, frag, fn} = impl;
-			history.abi = abi;
-			history.frag = frag;
+			const {abi, frag, fn} = history.impl = impl;
+			history.name = frag.name;
 			let args = abi.decodeFunctionData(frag, calldata);
 			history.args = history.show = args;
 			let res = await fn(args, context, history);
@@ -203,8 +193,7 @@ async function callRecord(record, calldata, multicall = true, history) {
 		let frag = RESOLVE_ABI.getFunction(method);
 		if (!frag || (!multicall && frag.name === MULTICALL)) throw error_with(`unsupported resolve() method: ${method}`, {calldata});
 		if (history) {
-			history.abi = RESOLVE_ABI;
-			history.frag = frag;
+			history.name = frag.name;
 		}
 		let args = RESOLVE_ABI.decodeFunctionData(frag, calldata);
 		if (history) {
@@ -254,7 +243,7 @@ async function callRecord(record, calldata, multicall = true, history) {
 			case 'pubkey(bytes32)': {
 				// https://github.com/ethereum/EIPs/pull/619
 				let value = await record?.pubkey?.();
-				if (is_bytes_like(value)) return value; // support raw encoding
+				if (ethers.ethers.isBytesLike(value)) return value; // support raw encoding
 				res = value ? [value.x, value.y] : [0, 0];
 				break;
 			}
@@ -263,7 +252,7 @@ async function callRecord(record, calldata, multicall = true, history) {
 				let types = Number(args.types);
 				if (history) history.show = [abi_types_str(types)];
 				let value = await record?.ABI?.(types);
-				if (is_bytes_like(value)) return value; // support raw encoding
+				if (ethers.ethers.isBytesLike(value)) return value; // support raw encoding
 				res = value ? [value.type, value.data] : [0, '0x'];
 				break;
 			}
@@ -296,12 +285,67 @@ function abi_types_str(types) {
 	return v.join('|');
 }
 
+function serve(ezccip, {port, resolvers, log, signingKey, ...a} = {}) {
+	if (ezccip instanceof Function) {
+		let temp = new EZCCIP();
+		temp.enableENSIP10(ezccip);
+		ezccip = temp;
+	}
+	if (!resolvers) resolvers = {'*': ethers.ethers.ZeroAddress};
+	if (!log && log !== false) log = (...a) => console.log(new Date(), ...a);
+	if (!signingKey) signingKey = new ethers.ethers.SigningKey(ethers.ethers.randomBytes(32));
+	return new Promise(ful => {
+		let http = node_http.createServer(async (req, reply) => {
+			let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+			let {method, url} = req;
+			try {
+				reply.setHeader('access-control-allow-origin', '*');
+				switch (method) {
+					case 'OPTIONS': return reply.setHeader('access-control-allow-headers', '*').end();
+					case 'POST': {
+						let key = url.slice(1);
+						let resolver = resolvers[key] ?? resolvers['*'];
+						if (!resolver) throw error_with('unknown resolver', {status: 404, key});
+						let v = [];
+						for await (let x of req) v.push(x);
+						let {sender, data: calldata} = JSON.parse(Buffer.concat(v));
+						let {data, history} = await ezccip.handleRead(sender, calldata, {signingKey, resolver, ip, ...a});
+						log?.(ip, url, history.toString());
+						write_json(reply, {data});
+						break;
+					}
+					default: throw error_with('unsupported http method', {status: 405, method});
+				}
+			} catch (err) {
+				log?.(ip, method, url, err);
+				let {status = 500, message} = err;
+				reply.statusCode = status;
+				write_json(reply, {message});
+			}
+		});
+		http.listen(port, () => {
+			port = http.address().port;
+			let endpoint = `http://localhost:${port}`;
+			let signer = ethers.ethers.computeAddress(signingKey);
+			let context = `${signer} ${endpoint}`;
+			log?.('Ready!', {context});
+			ful({http, port, endpoint, signer, context});
+		});
+	});
+}
+
+function write_json(reply, json) {
+	let buf = Buffer.from(JSON.stringify(json));
+	reply.setHeader('content-length', buf.length);
+	reply.setHeader('content-type', 'application/json');
+	reply.end(buf);
+}
+
 exports.EZCCIP = EZCCIP;
 exports.History = History;
 exports.RESOLVE_ABI = RESOLVE_ABI;
 exports.asciiize = asciiize;
 exports.callRecord = callRecord;
 exports.error_with = error_with;
-exports.is_bytes_like = is_bytes_like;
-exports.is_phex = is_phex;
 exports.labels_from_dns_encoded = labels_from_dns_encoded;
+exports.serve = serve;
