@@ -1,4 +1,4 @@
-import type {SigningKey, BytesLike, BigNumberish, Interface, Result} from 'ethers';
+import type {SigningKey, BytesLike, BigNumberish, Interface, Result, FunctionFragment} from 'ethers';
 
 type HexString = string;
 
@@ -37,10 +37,11 @@ type EZCCIPConfig = {
 	ttlSec?: number;
 	recursionLimit?: number;
 } & CallContextExtra;
+type CCIPReadHandler = {abi: Interface, frag: FunctionFragment, fn: CCIPReadFunction};
 
 export class EZCCIP {
 	enableENSIP10(get: ENSIP10Function, options?: {multicall?: boolean}): void;
-	register(abi: string | string[] | Interface, impl: CCIPReadFunction | {[name: string]: CCIPReadFunction}): void;
+	register(abi: string | string[] | Interface, impl: CCIPReadFunction | {[name: string]: CCIPReadFunction}): CCIPReadHandler[];
 	handleRead(sender: HexString, calldata: HexString, config: EZCCIPConfig): Promise<{data: HexString, history: History}>;
 }
 export function callRecord(record: Record | undefined, calldata: HexString, multicall?: boolean, history?: History): string;

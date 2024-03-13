@@ -73,39 +73,34 @@ export class EZCCIP {
 			// returns raw since: abi.decode(abi.encode(x)) == x
 		});
 	}
-	register(abi0, impl) {
-		let abi = abi0;
+	register(abi, impl) {
+		//let abi;
 		if (typeof abi === 'string') {
 			abi = abi.trim();
 			if (!abi.startsWith('function') && !abi.includes('\n')) abi = `function ${abi}`;
 			abi = [abi];
 		}
-		if (Array.isArray(abi)) {
-			abi = new ethers.Interface(abi);
-		}
-		if (!(abi instanceof ethers.Interface)) {
-			throw with_error('unable to derive interface', {abi: abi0});
-		}
+		abi = ethers.Interface.from(abi);
 		let frags = abi.fragments.filter(x => x instanceof ethers.FunctionFragment);
 		if (impl instanceof Function) {
 			if (frags.length != 1) throw error_with('expected 1 implementation', {abi, impl, names: frags.map(x => x.format())});
 			let frag = frags[0];
-			this.impls.set(frag.selector, {abi, frag, fn: impl.bind(this)});
-		} else {
-			for (let [name, fn] of Object.entries(impl)) {
-				let frag = frags.find(x => x.name === name);
-				if (!frag) {
-					frag = frags.find(x => x.format() === name);
-					if (!frag) throw error_with(`expected interface function: ${name}`, {abi, impl, name});
-				}
-				this.impls.set(frag.selector, {abi, frag, fn: fn.bind(this)});
-			}
+			impl = {[frag.name]: impl};
 		}
+		return Object.entries(impl).map(([key, fn]) => {
+			let frag = frags.find(x => x.name === key || x.format() === key || x.selector === key);
+			if (!frag) {
+				throw error_with(`expected interface function: ${key}`, {abi, impl, key});
+			}
+			let handler = {abi, frag, fn: fn.bind(this)};
+			this.impls.set(frag.selector, handler);
+			return handler;
+		});
 	}
 	// https://eips.ethereum.org/EIPS/eip-3668
 	async handleRead(sender, calldata, {signingKey, resolver, recursionLimit = 2, ttlSec = 60, ...context}) {
-		if (!ethers.isHexString(sender) || sender.length !== 42) throw with_error('expected sender address', {status: 400});
-		if (!ethers.isHexString(calldata) || calldata.length < 10) throw with_error('expected calldata', {status: 400});
+		if (!ethers.isHexString(sender) || sender.length !== 42) throw error_with('expected sender address', {status: 400});
+		if (!ethers.isHexString(calldata) || calldata.length < 10) throw error_with('expected calldata', {status: 400});
 		calldata = calldata.toLowerCase();
 		context.sender = sender.toLowerCase();
 		context.calldata = calldata;
