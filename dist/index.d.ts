@@ -32,8 +32,8 @@ type CallContext = {
 type CCIPReadFunction = (args: Result, context: CallContext, history: History) => Promise<HexString | any[]>; 
 type ENSIP10Function = (name: string, context: CallContext) => Promise<Record | undefined>;
 type EZCCIPConfig = {
-	signingKey: SigningKey;
-	resolver: HexString;
+	protocol?: 'tor' | 'ens' | 'raw';
+	signingKey?: SigningKey;
 	ttlSec?: number;
 	recursionLimit?: number;
 } & CallContextExtra;
@@ -42,17 +42,15 @@ type CCIPReadHandler = {abi: Interface, frag: FunctionFragment, fn: CCIPReadFunc
 export class EZCCIP {
 	enableENSIP10(get: ENSIP10Function, options?: {multicall?: boolean}): void;
 	register(abi: string | string[] | Interface, impl: CCIPReadFunction | {[name: string]: CCIPReadFunction}): CCIPReadHandler[];
-	handleRead(sender: HexString, calldata: HexString, config: EZCCIPConfig): Promise<{data: HexString, history: History}>;
+	handleRead(sender: HexString, calldata: HexString, config: EZCCIPConfig & {resolver?: HexString}): Promise<{data: HexString, history: History}>;
 }
 export function callRecord(record: Record | undefined, calldata: HexString, multicall?: boolean, history?: History): string;
 
 export function serve(handler: ENSIP10Function | EZCCIP, options?: {
 	log?: (...a: any) => any; // default console.log w/date, false to disable
 	port?: number; // default random open
-	signingKey?: SigningKey; // default random
-	resolvers?: HexString | {[key: string]: HexString}; // default 0x0
-	// remainder included in context
-} & CallContextExtra): Promise<{
+	resolvers?: {[key: string]: HexString}; // default: uses sender
+} & EZCCIPConfig): Promise<{
 	http: { close(): void };
 	port: number;
 	endpoint: string;

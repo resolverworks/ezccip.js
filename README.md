@@ -1,23 +1,35 @@
 # ezccip.js
-Turnkey CCIP-Read Handler for ENS
+Turnkey CCIP-Read Handler for ENS and arbitrary functions.
 
 `npm i @resolverworks/ezccip`
 * see [**types**](./dist/index.d.ts) / uses [ethers](https://github.com/ethers-io/ethers.js/)
-* implements [TheOffchainResolver.sol](https://github.com/resolverworks/TheOffchainResolver.sol) protocol
-* used by [TheOffchainGateway.js](https://github.com/resolverworks/TheOffchainGateway.js)
-* works with [enson.js](https://github.com/resolverworks/enson.js)
+* works with any server infrastructure
+* implements multiple protocols:
+	* `"tor"` &mdash; [resolverworks/**TheOffchainResolver.sol**](https://github.com/resolverworks/TheOffchainResolver.sol)
+	* `"ens"` &mdash; [ensdomains/**offchain-resolver**](https://github.com/ensdomains/offchain-resolver/)
+	* `"raw"` &mdash; raw response (EVM Gateway, testing, etc.) 
+* used by [resolverworks/**TheOffchainGateway.js**](https://github.com/resolverworks/TheOffchainGateway.js)
+* [resolverworks/**enson.js**](https://github.com/resolverworks/enson.js) **Record**-type works with `enableENSIP10()`
 * supports *Multicall-over-CCIP-Read*
     * `resolve(multicall(...))`
     * `multicall(resolve(...))`
     * `multicall(resolve(multicall(...)), ...)`
 * use [`serve()`](./src/serve.js) to quickly launch a server
 
+## Usage
+
+Create an instance and register some handlers.
+
 ```js
 import {EZCCIP} from '@resolverworks/ezccip';
 
 let ezccip = new EZCCIP();
 
+// implement an arbitrary function
+ezccip.register('add(uint256, uint256) returns (uint256)', ([a, b]) => [a + b]);
+
 // implement a wildcard ENSIP-10 resolver
+// which handles resolve() automatically
 ezccip.enableENSIP10(async (name, context) => {
     return {
         async text(key) {
@@ -28,16 +40,16 @@ ezccip.enableENSIP10(async (name, context) => {
         },
     };
 });
-
-// implement an arbitrary function
-ezccip.register('add(uint256, uint256) returns (uint256)', ([a, b]) => [a + b]);
-
-// imagine: your HTTP server has a request for CCIP-Read from GET or POST
+```
+When your server has a request for CCIP-Read, use EZCCIP to produce a response.
+```js
 let {sender, data: calldata} = JSON.parse(req.body);
-let {data, history} = await ezccip.handleRead(sender, calldata, {
+let {data} = await ezccip.handleRead(sender, calldata, {
+    protocol: 'tor', // default, tor requires signingKey + resolver
     signingKey, // your private key
-    resolver, // any TOR deployment
-    // all other values are considered "context" passed to each handler
+    resolver, // address of the TOR
+    // most other values are considered "context"
+    // which is passed to each handler
     thing: 1,
 });
 reply.json({data});
@@ -45,19 +57,17 @@ reply.json({data});
 
 ## Demo
 
+1. `npm run start` &mdash; starts a CCIP-Read server for [**TOR**](https://github.com/resolverworks/TheOffchainResolver.sol#context-format) protocol 
+1. `setText("ccip.context", "0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd http://localhost:8016")`
 
-1. `npm run start`
-    * The [`demo.js`](./test/demo.js) server will print:
-        > `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd http://localhost:8016`\
-        >&nbsp; `""` &rarr; `0x828ec5bDe537B8673AF98D77bCB275ae1CA26D1f` &larr; Mainnet\
-        > `"s"` &rarr; `0x9Ec7f2ce83fcDF589487303fA9984942EF80Cb39` &larr; Sepolia\
-        >`"g"` &rarr; `0x9b87849Aa21889343b6fB1E146f9F734ecFA9982` &larr; Goerli
-    * Those `keys` correspond to the [TOR deployment](https://github.com/resolverworks/TheOffchainResolver.sol) on each chain.
-    * The above configuration implies following `CONTEXT`:
-        * Mainnet: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd http://localhost:8016/`
-        * Sepolia: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd http://localhost:8016/s` &larr; `/key`
-1. set [`CONTEXT`](https://github.com/resolverworks/TheOffchainResolver.sol#context-format)
+#### Note:
 
+* `serve()` will bind requests to the `sender` if the protocol needs a target.  
+* Provide a `resolvers` mapping to pair endpoint suffixes to specific contract deployments.
+	* The [demo](./test/demo.js#L39) uses `s` to correspond to the [Sepolia deployment](https://sepolia.etherscan.io/address/0x9Ec7f2ce83fcDF589487303fA9984942EF80Cb39), which makes requests to the modified endpoint `http://localhost:8016/s` target that contract, regardless of sender. 
+* An `endpoint` &harr; `contract` pairing is **required** to support wrapped/recursive CCIP calls!
+
+	
 ## Examples
 
 * **DNS**: [`ezccip.raffy.xyz`](https://adraffy.github.io/ens-normalize.js/test/resolver.html#ezccip.raffy.xyz)

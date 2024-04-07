@@ -135,24 +135,46 @@ class EZCCIP {
 		});
 	}
 	// https://eips.ethereum.org/EIPS/eip-3668
-	async handleRead(sender, calldata, {signingKey, resolver, recursionLimit = 2, ttlSec = 60, ...context}) {
+	async handleRead(sender, calldata, {protocol = 'tor', signingKey, resolver, recursionLimit = 2, ttlSec = 60, ...context}) {
 		if (!ethers.isHexString(sender) || sender.length !== 42) throw error_with('expected sender address', {status: 400});
-		if (!ethers.isHexString(calldata) || calldata.length < 10) throw error_with('expected calldata', {status: 400});
-		calldata = calldata.toLowerCase();
+		if (!ethers.isHexString(calldata) || calldata.length < 10) throw error_with('expected calldata', {status: 400});		
 		context.sender = sender.toLowerCase();
-		context.calldata = calldata;
-		context.resolver = resolver;
+		context.calldata = calldata = calldata.toLowerCase();
 		let history = context.history = new History(recursionLimit);
 		let response = await this.handleCall(calldata, context, history);
+		let data;
 		let expires = Math.floor(Date.now() / 1000) + ttlSec;
-		let hash = ethers.solidityPackedKeccak256(
-			['address', 'uint64', 'bytes32', 'bytes32'],
-			[resolver, expires, ethers.keccak256(calldata), ethers.keccak256(response)]
-		);
-		let data = ABI_CODER.encode(
-			['bytes', 'uint64', 'bytes'],
-			[signingKey.sign(hash).serialized, expires, response]
-		);
+		switch (protocol) {
+			case 'raw': {
+				data = response;
+				break;
+			}
+			case 'ens': {
+				// https://github.com/ensdomains/offchain-resolver/blob/099b7e9827899efcf064e71b7125f7b4fc2e342f/packages/gateway/src/server.ts#L95
+				let hash = ethers.solidityPackedKeccak256(
+					['bytes', 'address', 'uint64', 'bytes32', 'bytes32'],
+					['0x1900', resolver, expires, ethers.keccak256(calldata), ethers.keccak256(response)]
+				);
+				data = ABI_CODER.encode(
+					['bytes', 'uint64', 'bytes'],
+					[response, expires, signingKey.sign(hash).serialized]
+				);
+				break;
+			}
+			case 'tor': {
+				// https://github.com/resolverworks/TheOffchainResolver.sol?tab=readme-ov-file#tor-protocol
+				let hash = ethers.solidityPackedKeccak256(
+					['address', 'uint64', 'bytes32', 'bytes32'],
+					[resolver, expires, ethers.keccak256(calldata), ethers.keccak256(response)]
+				);
+				data = ABI_CODER.encode(
+					['bytes', 'uint64', 'bytes'],
+					[signingKey.sign(hash).serialized, expires, response]
+				);
+				break;
+			}
+			default: throw error_with('unknown protocol', {protocol});
+		}		
 		return {data, history};
 	}
 	async handleCall(calldata, context, history) {
@@ -278,20 +300,15 @@ function abi_types_str(types) {
 	return v.join('|');
 }
 
-const ANY_KEY = '*';
-
-function serve(ezccip, {port, resolvers = ethers.ZeroAddress, log, signingKey, ...a} = {}) {
+function serve(ezccip, {port, resolvers, log, protocol = 'tor', signingKey, ...a} = {}) {
 	if (ezccip instanceof Function) {
 		let temp = new EZCCIP();
 		temp.enableENSIP10(ezccip);
 		ezccip = temp;
 	}
-	if (typeof resolvers === 'string') {
-		resolvers = {[ANY_KEY]: resolvers};
-	}
 	if (log === false) {
 		log = undefined;
-	} else if (!log) {
+	} else if (!log || log === true) {
 		log = (...a) => console.log(new Date(), ...a);
 	}
 	if (!signingKey) {
@@ -306,13 +323,13 @@ function serve(ezccip, {port, resolvers = ethers.ZeroAddress, log, signingKey, .
 				switch (method) {
 					case 'OPTIONS': return reply.setHeader('access-control-allow-headers', '*').end();
 					case 'POST': {
-						let key = url.slice(1);
-						let resolver = resolvers[key] ?? resolvers[ANY_KEY];
-						if (!resolver) throw error_with('unknown resolver', {status: 404, key});
 						let v = [];
 						for await (let x of req) v.push(x);
 						let {sender, data: calldata} = JSON.parse(Buffer.concat(v));
-						let {data, history} = await ezccip.handleRead(sender, calldata, {signingKey, resolver, ip, ...a});
+						let key = url.slice(1);
+						let resolver = resolvers ? resolvers[key] : sender;
+						if (!resolver) throw error_with('unknown resolver', {status: 404, key});
+						let {data, history} = await ezccip.handleRead(sender, calldata, {protocol, signingKey, resolver, ip, ...a});
 						log?.(ip, url, history.toString());
 						write_json(reply, {data});
 						break;
@@ -331,7 +348,7 @@ function serve(ezccip, {port, resolvers = ethers.ZeroAddress, log, signingKey, .
 			let endpoint = `http://localhost:${port}`;
 			let signer = ethers.computeAddress(signingKey);
 			let context = `${signer} ${endpoint}`;
-			log?.('Ready!', {context, resolvers});
+			log?.('Ready!', {protocol, context});
 			ful({http, port, endpoint, signer, context});
 		});
 	});

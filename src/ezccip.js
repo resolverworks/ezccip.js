@@ -98,24 +98,46 @@ export class EZCCIP {
 		});
 	}
 	// https://eips.ethereum.org/EIPS/eip-3668
-	async handleRead(sender, calldata, {signingKey, resolver, recursionLimit = 2, ttlSec = 60, ...context}) {
+	async handleRead(sender, calldata, {protocol = 'tor', signingKey, resolver, recursionLimit = 2, ttlSec = 60, ...context}) {
 		if (!ethers.isHexString(sender) || sender.length !== 42) throw error_with('expected sender address', {status: 400});
-		if (!ethers.isHexString(calldata) || calldata.length < 10) throw error_with('expected calldata', {status: 400});
-		calldata = calldata.toLowerCase();
+		if (!ethers.isHexString(calldata) || calldata.length < 10) throw error_with('expected calldata', {status: 400});		
 		context.sender = sender.toLowerCase();
-		context.calldata = calldata;
-		context.resolver = resolver;
+		context.calldata = calldata = calldata.toLowerCase();
 		let history = context.history = new History(recursionLimit);
 		let response = await this.handleCall(calldata, context, history);
+		let data;
 		let expires = Math.floor(Date.now() / 1000) + ttlSec;
-		let hash = ethers.solidityPackedKeccak256(
-			['address', 'uint64', 'bytes32', 'bytes32'],
-			[resolver, expires, ethers.keccak256(calldata), ethers.keccak256(response)]
-		);
-		let data = ABI_CODER.encode(
-			['bytes', 'uint64', 'bytes'],
-			[signingKey.sign(hash).serialized, expires, response]
-		);
+		switch (protocol) {
+			case 'raw': {
+				data = response;
+				break;
+			}
+			case 'ens': {
+				// https://github.com/ensdomains/offchain-resolver/blob/099b7e9827899efcf064e71b7125f7b4fc2e342f/packages/gateway/src/server.ts#L95
+				let hash = ethers.solidityPackedKeccak256(
+					['bytes', 'address', 'uint64', 'bytes32', 'bytes32'],
+					['0x1900', resolver, expires, ethers.keccak256(calldata), ethers.keccak256(response)]
+				);
+				data = ABI_CODER.encode(
+					['bytes', 'uint64', 'bytes'],
+					[response, expires, signingKey.sign(hash).serialized]
+				);
+				break;
+			}
+			case 'tor': {
+				// https://github.com/resolverworks/TheOffchainResolver.sol?tab=readme-ov-file#tor-protocol
+				let hash = ethers.solidityPackedKeccak256(
+					['address', 'uint64', 'bytes32', 'bytes32'],
+					[resolver, expires, ethers.keccak256(calldata), ethers.keccak256(response)]
+				);
+				data = ABI_CODER.encode(
+					['bytes', 'uint64', 'bytes'],
+					[signingKey.sign(hash).serialized, expires, response]
+				);
+				break;
+			}
+			default: throw error_with('unknown protocol', {protocol});
+		}		
 		return {data, history};
 	}
 	async handleCall(calldata, context, history) {

@@ -3,20 +3,15 @@ import {error_with} from './utils.js';
 import {ethers} from 'ethers';
 import {EZCCIP} from './ezccip.js';
 
-const ANY_KEY = '*';
-
-export function serve(ezccip, {port, resolvers = ethers.ZeroAddress, log, signingKey, ...a} = {}) {
+export function serve(ezccip, {port, resolvers, log, protocol = 'tor', signingKey, ...a} = {}) {
 	if (ezccip instanceof Function) {
 		let temp = new EZCCIP();
 		temp.enableENSIP10(ezccip);
 		ezccip = temp;
 	}
-	if (typeof resolvers === 'string') {
-		resolvers = {[ANY_KEY]: resolvers};
-	}
 	if (log === false) {
 		log = undefined;
-	} else if (!log) {
+	} else if (!log || log === true) {
 		log = (...a) => console.log(new Date(), ...a);
 	}
 	if (!signingKey) {
@@ -31,13 +26,13 @@ export function serve(ezccip, {port, resolvers = ethers.ZeroAddress, log, signin
 				switch (method) {
 					case 'OPTIONS': return reply.setHeader('access-control-allow-headers', '*').end();
 					case 'POST': {
-						let key = url.slice(1);
-						let resolver = resolvers[key] ?? resolvers[ANY_KEY];
-						if (!resolver) throw error_with('unknown resolver', {status: 404, key});
 						let v = [];
 						for await (let x of req) v.push(x);
 						let {sender, data: calldata} = JSON.parse(Buffer.concat(v));
-						let {data, history} = await ezccip.handleRead(sender, calldata, {signingKey, resolver, ip, ...a});
+						let key = url.slice(1);
+						let resolver = resolvers ? resolvers[key] : sender;
+						if (!resolver) throw error_with('unknown resolver', {status: 404, key});
+						let {data, history} = await ezccip.handleRead(sender, calldata, {protocol, signingKey, resolver, ip, ...a});
 						log?.(ip, url, history.toString());
 						write_json(reply, {data});
 						break;
@@ -56,7 +51,7 @@ export function serve(ezccip, {port, resolvers = ethers.ZeroAddress, log, signin
 			let endpoint = `http://localhost:${port}`;
 			let signer = ethers.computeAddress(signingKey);
 			let context = `${signer} ${endpoint}`;
-			log?.('Ready!', {context, resolvers});
+			log?.('Ready!', {protocol, context});
 			ful({http, port, endpoint, signer, context});
 		});
 	});

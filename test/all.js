@@ -13,3 +13,4 @@ import {
 import './utils.js';
 import './history.js';
 import './custom.js';
+import './protocols.js';

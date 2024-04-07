@@ -11,7 +11,7 @@ test('serve w/custom function', async () => {
 
 	let ezccip = new EZCCIP();
 	ezccip.register(abi, fn);
-	let ccip = await serve(ezccip, {log: false});
+	let ccip = await serve(ezccip, {log: true});
 	after(() => ccip.http.close());
 	
 	let frag = abi.getFunction('f');
@@ -22,8 +22,9 @@ test('serve w/custom function', async () => {
 			data: abi.encodeFunctionData(frag, args)
 		})
 	});
-	assert(res.ok, 'expected http 200');	
+	assert.equal(res.status, 200, 'http status');	
 	let {data} = await res.json();
+	console.log([data, res.status]);
 	assert(data, 'expected data');
 	
 	let answer = abi.getAbiCoder().decode(['bytes', 'uint64', 'bytes'], data)[2]; // ignore signing
