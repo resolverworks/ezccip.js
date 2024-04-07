@@ -302,16 +302,16 @@ function abi_types_str(types) {
 	return v.join('|');
 }
 
-function serve(ezccip, {port, resolvers, log, protocol = 'tor', signingKey, ...a} = {}) {
+function serve(ezccip, {port, resolvers, log = true, protocol = 'tor', signingKey, ...a} = {}) {
 	if (ezccip instanceof Function) {
 		let temp = new EZCCIP();
 		temp.enableENSIP10(ezccip);
 		ezccip = temp;
 	}
-	if (log === false) {
-		log = undefined;
-	} else if (!log || log === true) {
+	if (log === true) {
 		log = (...a) => console.log(new Date(), ...a);
+	} else if (!log) {
+		log = undefined;
 	}
 	if (!signingKey) {
 		signingKey = new ethers.ethers.SigningKey(ethers.ethers.randomBytes(32));

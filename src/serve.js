@@ -3,16 +3,16 @@ import {error_with} from './utils.js';
 import {ethers} from 'ethers';
 import {EZCCIP} from './ezccip.js';
 
-export function serve(ezccip, {port, resolvers, log, protocol = 'tor', signingKey, ...a} = {}) {
+export function serve(ezccip, {port, resolvers, log = true, protocol = 'tor', signingKey, ...a} = {}) {
 	if (ezccip instanceof Function) {
 		let temp = new EZCCIP();
 		temp.enableENSIP10(ezccip);
 		ezccip = temp;
 	}
-	if (log === false) {
-		log = undefined;
-	} else if (!log || log === true) {
+	if (log === true) {
 		log = (...a) => console.log(new Date(), ...a);
+	} else if (!log) {
+		log = undefined;
 	}
 	if (!signingKey) {
 		signingKey = new ethers.SigningKey(ethers.randomBytes(32));

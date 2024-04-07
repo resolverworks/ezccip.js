@@ -47,7 +47,7 @@ export class EZCCIP {
 export function callRecord(record: Record | undefined, calldata: HexString, multicall?: boolean, history?: History): string;
 
 export function serve(handler: ENSIP10Function | EZCCIP, options?: {
-	log?: (...a: any) => any; // default console.log w/date, false to disable
+	log?: boolean | ((...a: any) => any); // default console.log w/date, falsy to disable
 	port?: number; // default random open
 	resolvers?: {[key: string]: HexString}; // default: uses sender
 } & EZCCIPConfig): Promise<{
