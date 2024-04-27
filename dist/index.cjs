@@ -113,7 +113,6 @@ class EZCCIP {
 		});
 	}
 	register(abi, impl) {
-		//let abi;
 		if (typeof abi === 'string') {
 			abi = abi.trim();
 			if (!abi.startsWith('function') && !abi.includes('\n')) abi = `function ${abi}`;
@@ -142,11 +141,12 @@ class EZCCIP {
 		if (!ethers.ethers.isHexString(calldata) || calldata.length < 10) throw error_with('expected calldata', {status: 400});		
 		context.sender = sender.toLowerCase();
 		context.calldata = calldata = calldata.toLowerCase();
+		context.protocol = protocol; // allow the protocol be modified by the callback
 		let history = context.history = new History(recursionLimit);
 		let response = await this.handleCall(calldata, context, history);
 		let data;
 		let expires = Math.floor(Date.now() / 1000) + ttlSec;
-		switch (protocol) {
+		switch (context.protocol) {
 			case 'raw': {
 				data = response;
 				break;
@@ -190,10 +190,12 @@ class EZCCIP {
 			let args = abi.decodeFunctionData(frag, calldata);
 			history.args = history.show = args;
 			let res = await fn(args, context, history);
-			if (Array.isArray(res)) {
+			if (!res) {
+				res = '0x';
+			} else if (Array.isArray(res)) {
 				// an array implies we need to encode the arguments
 				// otherwise, the result is considered already encoded
-				res = abi.encodeFunctionResult(frag, res); 
+				res = abi.encodeFunctionResult(frag, res);
 			}
 			return res;
 		} catch (err) {
@@ -273,6 +275,11 @@ async function callRecord(record, calldata, multicall = true, history) {
 				res = value ? [value.type, value.data] : [0, '0x'];
 				break;
 			}
+			// not implemented:
+			// https://github.com/ensdomains/ens-contracts/blob/staging/contracts/resolvers/profiles/IInterfaceResolver.sol
+			// https://github.com/ensdomains/ens-contracts/blob/staging/contracts/resolvers/profiles/IDNSRecordResolver.sol
+			// https://github.com/ensdomains/ens-contracts/blob/staging/contracts/resolvers/profiles/IDNSZoneResolver.sol
+			// https://github.com/ensdomains/ens-contracts/blob/staging/contracts/resolvers/profiles/IVersionableResolver.sol
 		}
 		return RESOLVE_ABI.encodeFunctionResult(frag, res);
 	} catch (err) {

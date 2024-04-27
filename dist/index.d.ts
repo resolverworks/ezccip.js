@@ -22,17 +22,19 @@ export type History = {
 	then(): History;
 }
 
+type SigningProtocol = 'tor' | 'ens' | 'raw';
 type CallContextExtra = {[key: string]: any};
 type CallContext = {
 	sender: HexString;
 	calldata: HexString;
-	resolver: HexString;
+	protocol: SigningProtocol;
 	history: History;
 } & CallContextExtra;
-type CCIPReadFunction = (args: Result, context: CallContext, history: History) => Promise<HexString | any[]>; 
+type CCIPReadFunction = (args: Result, context: CallContext, history: History) => Promise<HexString | any[] | undefined>; 
 type ENSIP10Function = (name: string, context: CallContext) => Promise<Record | undefined>;
 type EZCCIPConfig = {
-	protocol?: 'tor' | 'ens' | 'raw';
+	protocol?: SigningProtocol;
+	resolver?: HexString;
 	signingKey?: SigningKey;
 	ttlSec?: number;
 	recursionLimit?: number;
@@ -44,7 +46,7 @@ export class EZCCIP {
 	register(abi: string | string[] | Interface, impl: CCIPReadFunction | {[name: string]: CCIPReadFunction}): CCIPReadHandler[];
 	handleRead(sender: HexString, calldata: HexString, config: EZCCIPConfig & {resolver?: HexString}): Promise<{data: HexString, history: History}>;
 }
-export function callRecord(record: Record | undefined, calldata: HexString, multicall?: boolean, history?: History): string;
+export function callRecord(record: Record | undefined, calldata: HexString, multicall?: boolean, history?: History): HexString;
 
 export function serve(handler: ENSIP10Function | EZCCIP, options?: {
 	log?: boolean | ((...a: any) => any); // default console.log w/date, falsy to disable
@@ -60,5 +62,6 @@ export function serve(handler: ENSIP10Function | EZCCIP, options?: {
 
 export function asciiize(s: string): string;
 export function labels_from_dns_encoded(v: Uint8Array): string[];
+export function error_with(message: string, options: Object, cause?: any): Error;
 
 export const RESOLVE_ABI: Interface;
