@@ -2,7 +2,7 @@
 Turnkey CCIP-Read Handler for ENS and arbitrary functions.
 
 `npm i @resolverworks/ezccip`
-* see [**types**](./dist/index.d.ts) / uses [ethers](https://github.com/ethers-io/ethers.js/)
+* see [**types**](./dist/index.d.ts) / uses [ethers@6](https://github.com/ethers-io/ethers.js/)
 * works with any server infrastructure
 * implements multiple protocols:
 	* `"tor"` &mdash; [resolverworks/**TheOffchainResolver.sol**](https://github.com/resolverworks/TheOffchainResolver.sol)
@@ -67,7 +67,8 @@ let {data} = await ezccip.handleRead(sender, calldata, {
     resolver, // address of the TOR
     // most other values are considered "context"
     // which is passed to each handler
-    thing: 1,
+    // number: 1,
+	// string: "abc",
 });
 reply.json({data});
 ```
@@ -84,7 +85,6 @@ reply.json({data});
 	* The [demo](./test/demo.js#L39) uses `s` to correspond to the [Sepolia deployment](https://sepolia.etherscan.io/address/0x9Ec7f2ce83fcDF589487303fA9984942EF80Cb39), which makes requests to the modified endpoint `http://localhost:8016/s` target that contract, regardless of sender. 
 * An `endpoint` &harr; `contract` pairing is **required** to support wrapped/recursive CCIP calls!
 
-	
 ## Examples
 
 * **DNS**: [`ezccip.raffy.xyz`](https://adraffy.github.io/ens-normalize.js/test/resolver.html#ezccip.raffy.xyz)
