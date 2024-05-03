@@ -37,11 +37,14 @@ h1 {
 	display: flex;
 }
 .wide label {
-	display: block;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px;
 	margin-bottom: 8px;
 }
 label i {
-	float: right;
+	margin-left: auto;
 	opacity: .7;
 }
 .wide input,
@@ -55,6 +58,20 @@ label i {
 .wide textarea {
 	min-height: 48px;
 	resize: vertical;
+}
+#method_span {
+	padding: 2px 4px;
+	border-radius: 4px;
+	background-color: #afa;
+	border: 1px solid #ccc;
+	font: 12px sans-serif;
+}
+#method_span:empty {
+	display: none;
+}
+.field {
+	display: flex;
+	gap: 8px;
 }
 #actions {
 	display: flex;
@@ -110,7 +127,7 @@ footer {
 <main>
 <div id="config" class="rows">
 	<div class="wide" id="endpoint">
-		<label for="endpoint_field">Endpoint<i></i></label>
+		<label for="endpoint_field"><span id="method_span"></span>Endpoint<i></i></label>
 		<input class="big" id="endpoint_field" placeholder="https://raffy.xyz/tog/">
 	</div>
 	<div id="options">
@@ -123,6 +140,10 @@ footer {
 		<div class="wide" id="name">
 			<label for="name_field">ENS Name<i></i></label>
 			<input class="big" id="name_field" placeholder="raffy.eth">
+		</div>
+		<div class="wide">
+			<span id="field_count_lbl">0 fields</span>
+			<button id="add_field_btn">✍️ Add Field</button>
 		</div>
 	</div>
 	<div id="custom" class="rows hide">
@@ -156,7 +177,11 @@ footer {
 import {ens_normalize} from '../../ens-normalize.js/dist/index.min.js';
 import {ethers} from 'https://cdnjs.cloudflare.com/ajax/libs/ethers/6.12.1/ethers.min.js';
 
+const TEMPLATE_DATA = '{data}';
+const TEMPLATE_SENDER = '{sender}';
+
 const endpoint_field = document.querySelector('#endpoint input');
+const method_span = document.querySelector('#method_span');
 const endpoint_status = document.querySelector('#endpoint label i');
 const func_select = document.querySelector('#func_select');
 const test_btn = document.querySelector('#test_btn');
@@ -168,27 +193,38 @@ const abi_ta = document.querySelector('#abi textarea');
 const abi_status = document.querySelector('#abi label i');
 const args_ta = document.querySelector('#args textarea');
 const main_spinner = document.querySelector('#actions .spinner');
+const add_field_btn = document.querySelector('#add_field_btn');
 
 let call_state;
 
-update_func();
 endpoint_field.addEventListener('input', update_ux);
 name_field.addEventListener('input', update_ux);
 func_select.addEventListener('input', update_func);
 abi_ta.addEventListener('input', update_func);
 args_ta.addEventListener('input', update_func);
+test_btn.addEventListener('click', try_call);
+add_field_btn.addEventListener('click', () => add_field());
+
+update_func();
 endpoint_field.focus();
+
 
 function is_custom() {
 	return func_select.value === 'custom';
 }
 
-function update_endpoint() {
+function parse_endpoint() {
 	try {
-		new URL(endpoint_field.value.trim());
+		let url = new URL(endpoint_field.value.trim());
+		url = decodeURI(url.toString());
+		let has_data = url.includes(TEMPLATE_DATA);
+		// let sender = str.includes(TEMPLATE_SENDER);
+		// if (sender != data) throw new Error('expected {sender} and {data}');
+		method_span.innerText = `${has_data ? 'GET' : 'POST'}`;
 		endpoint_status.innerText = '';
-		return true;
+		return url;
 	} catch (err) {
+		method_span.innerText = '';
 		endpoint_status.innerText = `⚠️ ${err.message}`;
 	}
 }
@@ -221,18 +257,20 @@ function update_name() {
 
 function update_ux() {
 	main_spinner.classList.toggle('hide', !call_state);
-	let ok = update_endpoint();
-	if (!call_state) {
-		if (is_custom()) {
-			let {abi, func} = update_abi();
-			if (!abi) ok = false;
-			// parse ta
+	let ok = true;
+	let url = parse_endpoint();
+	if (!url) ok = false;
+	//if (!call_state) {
+	if (is_custom()) {
+		let {abi, func} = update_abi();
+		if (!abi) ok = false;
+		// parse ta
 
-		} else {
-			let norm = update_name();
-			if (!norm) ok = false;
-		} 
-	}
+	} else {
+		let norm = update_name();
+		if (!norm) ok = false;
+	} 
+	//}
 	test_btn.disabled = !ok;
 }
 
@@ -247,8 +285,39 @@ function update_func() {
 	update_ux();
 }
 
-async function try_call() {
+function make_call_data() {
+	if (is_custom()) {
 
+	} else {
+		
+	}
+}
+
+async function try_call() {
+	let sender = '0x';
+	let data = make_call_data();
+	let url0 = parse_endpoint();
+	let url = url0.replaceAll(TEMPLATE_SENDER, sender).replaceAll(TEMPLATE_DATA, data);
+	let options = {};
+	if (url === url0) {
+		options.method = 'POST';
+		options.headers['content-type'] = 'application/json';
+		options.body = JSON.stringify({sender, data});
+	}
+	let t0 = Date.now();
+	let res = await fetch(parse_endpoint(), options);
+}
+
+function add_field() {
+	let row = create('div', {className: ['wide', 'field']});
+	let profile_select = create('select', {className: 'profile_select'});
+	profile_select.append(create('option', {value: 'text'}, 'Text(key)'));
+	profile_select.append(create('option', {value: 'addrOld'}, 'Addr()'));
+	profile_select.append(create('option', {value: 'addr'}, 'Addr(coin)'));
+	profile_select.append(create('option', {value: 'chash'}, 'Contenthash()'));
+	let arg_field = create('input', {className: 'arg_field'});
+	row.append(profile_select, arg_field);
+	ensip10_div.append(row);
 }
 
 function create(el, args, ...a) {

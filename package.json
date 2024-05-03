@@ -13,12 +13,10 @@
 	"devDependencies": {
 		"rollup": "^4.11.0"
 	},
-	"types": "./dist/index.d.ts",
 	"exports": {
-		".": {
-			"import": "./dist/index.mjs",
-			"default": "./dist/index.cjs"
-		}
+		"types": "./dist/index.d.ts",
+		"import": "./dist/index.mjs",
+		"require": "./dist/index.cjs"
 	},
 	"files": [
 		"./dist"
