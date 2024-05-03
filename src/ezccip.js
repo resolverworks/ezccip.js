@@ -1,5 +1,10 @@
 import {labels_from_dns_encoded, error_with, asciiize} from './utils.js';
-import {ethers} from 'ethers';
+
+// direct imports to reduce serverless load
+import {AbiCoder, Interface, FunctionFragment} from 'ethers/abi';
+import {isBytesLike, getBytes, isHexString, hexlify} from 'ethers/utils';
+import {solidityPackedKeccak256} from 'ethers/hash';
+import {keccak256} from 'ethers/crypto';
 
 export class History {
 	constructor(level) {
@@ -34,9 +39,9 @@ export class History {
 	}
 }
 
-const ABI_CODER = ethers.AbiCoder.defaultAbiCoder();
+const ABI_CODER = AbiCoder.defaultAbiCoder();
 const MULTICALL = 'multicall';
-export const RESOLVE_ABI = new ethers.Interface([
+export const RESOLVE_ABI = new Interface([
 	'function name(bytes32 node) external view returns (string)',
 	'function addr(bytes32 node) external view returns (address)',
 	'function addr(bytes32 node, uint256 type) external view returns (bytes)',
@@ -61,7 +66,7 @@ export class EZCCIP {
 	enableENSIP10(get, {multicall = true} = {}) {
 		// https://docs.ens.domains/ensip/10
 		this.register('resolve(bytes, bytes) external view returns (bytes)', async([dnsname, data], context, history) => {
-			let labels = labels_from_dns_encoded(ethers.getBytes(dnsname));
+			let labels = labels_from_dns_encoded(getBytes(dnsname));
 			let name = labels.join('.');
 			// note: this doesn't normalize
 			// incoming name should be normalized
@@ -79,8 +84,8 @@ export class EZCCIP {
 			if (!abi.startsWith('function') && !abi.includes('\n')) abi = `function ${abi}`;
 			abi = [abi];
 		}
-		abi = ethers.Interface.from(abi);
-		let frags = abi.fragments.filter(x => x instanceof ethers.FunctionFragment);
+		abi = Interface.from(abi);
+		let frags = abi.fragments.filter(x => x instanceof FunctionFragment);
 		if (impl instanceof Function) {
 			if (frags.length != 1) throw error_with('expected 1 implementation', {abi, impl, names: frags.map(x => x.format())});
 			let frag = frags[0];
@@ -98,8 +103,8 @@ export class EZCCIP {
 	}
 	// https://eips.ethereum.org/EIPS/eip-3668
 	async handleRead(sender, calldata, {protocol = 'tor', signingKey, resolver, recursionLimit = 2, ttlSec = 60, ...context}) {
-		if (!ethers.isHexString(sender) || sender.length !== 42) throw error_with('expected sender address', {status: 400});
-		if (!ethers.isHexString(calldata) || calldata.length < 10) throw error_with('expected calldata', {status: 400});		
+		if (!isHexString(sender) || sender.length !== 42) throw error_with('expected sender address', {status: 400});
+		if (!isHexString(calldata) || calldata.length < 10) throw error_with('expected calldata', {status: 400});
 		context.sender = sender.toLowerCase();
 		context.calldata = calldata = calldata.toLowerCase();
 		context.protocol = protocol; // allow the protocol be modified by the callback
@@ -114,9 +119,9 @@ export class EZCCIP {
 			}
 			case 'ens': {
 				// https://github.com/ensdomains/offchain-resolver/blob/099b7e9827899efcf064e71b7125f7b4fc2e342f/packages/gateway/src/server.ts#L95
-				let hash = ethers.solidityPackedKeccak256(
+				let hash = solidityPackedKeccak256(
 					['bytes', 'address', 'uint64', 'bytes32', 'bytes32'],
-					['0x1900', resolver, expires, ethers.keccak256(calldata), ethers.keccak256(response)]
+					['0x1900', resolver, expires, keccak256(calldata), keccak256(response)]
 				);
 				data = ABI_CODER.encode(
 					['bytes', 'uint64', 'bytes'],
@@ -126,9 +131,9 @@ export class EZCCIP {
 			}
 			case 'tor': {
 				// https://github.com/resolverworks/TheOffchainResolver.sol?tab=readme-ov-file#tor-protocol
-				let hash = ethers.solidityPackedKeccak256(
+				let hash = solidityPackedKeccak256(
 					['address', 'uint64', 'bytes32', 'bytes32'],
-					[resolver, expires, ethers.keccak256(calldata), ethers.keccak256(response)]
+					[resolver, expires, keccak256(calldata), keccak256(response)]
 				);
 				data = ABI_CODER.encode(
 					['bytes', 'uint64', 'bytes'],
@@ -191,7 +196,7 @@ export async function callRecord(record, calldata, multicall = true, history) {
 			case 'addr(bytes32)': {
 				// https://eips.ethereum.org/EIPS/eip-137
 				let value = await record?.addr?.(60);
-				res = [value ? ethers.hexlify(value) : ethers.ZeroAddress]; // ethers bug, doesn't support Uint8Array as address
+				res = [value ? hexlify(value) : '0x'.padEnd(66, '0')]; // ethers bug, doesn't support Uint8Array as address
 				break;
 			}
 			case 'addr(bytes32,uint256)': {
@@ -223,7 +228,7 @@ export async function callRecord(record, calldata, multicall = true, history) {
 			case 'pubkey(bytes32)': {
 				// https://github.com/ethereum/EIPs/pull/619
 				let value = await record?.pubkey?.();
-				if (ethers.isBytesLike(value)) return value; // support raw encoding
+				if (isBytesLike(value)) return value; // support raw encoding
 				res = value ? [value.x, value.y] : [0, 0];
 				break;
 			}
@@ -232,7 +237,7 @@ export async function callRecord(record, calldata, multicall = true, history) {
 				let types = Number(args.types);
 				if (history) history.show = [abi_types_str(types)];
 				let value = await record?.ABI?.(types);
-				if (ethers.isBytesLike(value)) return value; // support raw encoding
+				if (isBytesLike(value)) return value; // support raw encoding
 				res = value ? [value.type, value.data] : [0, '0x'];
 				break;
 			}

@@ -1,4 +1,4 @@
-import {ethers} from 'ethers';
+import {toUtf8String} from 'ethers/utils';
 
 export function error_with(message, params, cause) {
 	let error;
@@ -23,7 +23,7 @@ export function labels_from_dns_encoded(v) {
 			return labels;
 		}
 		if (v.length < pos+n) break; // overflow
-		labels.push(ethers.toUtf8String(v.subarray(pos, pos += n)));
+		labels.push(toUtf8String(v.subarray(pos, pos += n)));
 	}
 	throw new Error('invalid DNS-encoded name');
 }

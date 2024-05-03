@@ -33,7 +33,7 @@ export function serve(ezccip, {port, resolvers, log = true, protocol = 'tor', si
 						let resolver = resolvers ? resolvers[key] : sender;
 						if (!resolver) throw error_with('unknown resolver', {status: 404, key});
 						let {data, history} = await ezccip.handleRead(sender, calldata, {protocol, signingKey, resolver, ip, ...a});
-						log?.(ip, url, history.toString());
+						log?.(ip, url, history.toString(), (data.length-2)>>1);
 						write_json(reply, {data});
 						break;
 					}

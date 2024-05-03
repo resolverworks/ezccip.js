@@ -7,12 +7,14 @@ export default defineConfig([
 			{
 				file: './dist/index.mjs',
 				format: 'es',
+				sourcemap: true
 			},
 			{
 				file: './dist/index.cjs',
 				format: 'cjs',
+				sourcemap: true
 			},
 		],
-		external: /^@|^node:|^[^/]+$/
+		external: /^(@|node:|ethers)/
 	}
 ]);

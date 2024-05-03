@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CCIP-Read Postman</title>
+<style>
+.hide { display: none !important; }
+.balloon { flex: 1; }
+body {
+	margin: 3rem;
+	background: #eee;
+}
+button:not(:disabled) {	
+	cursor: pointer;
+	padding: 4px 8px;
+}
+select {
+	padding: 4px 8px;
+	font-size: 100%;
+}
+header {
+	display: flex;
+	justify-content: space-between;
+}
+h1 {
+	display: flex;
+	margin: 0;
+	align-items: baseline;
+	gap: 16px;
+}
+.rows {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+#config .field {
+	display: flex;
+}
+.wide label {
+	display: block;
+	margin-bottom: 8px;
+}
+label i {
+	float: right;
+	opacity: .7;
+}
+.wide input,
+.wide textarea {
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 8px;
+	font-size: 150%;
+}
+.wide textarea {
+	min-height: 48px;
+	resize: vertical;
+}
+#actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+#actions button {
+	padding: 8px;
+	font-size: 100%;
+}
+#test_btn {
+	margin-left: 8px;
+	font-weight: bold;
+}
+.spinner {
+	width: 24px;
+	height: 24px;
+	box-sizing: border-box;
+	animation: spin 2s infinite linear;
+	border: 4px solid #000;
+	border-bottom-color: transparent;
+	border-radius: 100%;
+}
+@keyframes spin {
+	to { transform:rotate(360deg); }
+}
+footer {
+	text-align: center;
+	color: #666;
+	margin: 16px;
+}
+@media only screen and (max-width: 800px) { 
+	body {
+		margin: 1rem;
+	}
+}
+#note {
+	display: block;
+	margin: 8px auto;
+	border: 2px dashed #cc0;
+	padding: 8px;
+	background-color: #ffc;
+	text-align: center;
+}
+</style>
+</head>
+<body>
+<header>
+	<h1>CCIP-Read Postman</h1>
+	<a href="https://github.com/resolverworks/ezccip.sol">resolverworks/ezccip.js</a>
+</header>
+<div id="note">⚠️ Under Construction</div>
+<main>
+<div id="config" class="rows">
+	<div class="wide" id="endpoint">
+		<label for="endpoint_field">Endpoint<i></i></label>
+		<input class="big" id="endpoint_field" placeholder="https://raffy.xyz/tog/">
+	</div>
+	<div id="options">
+		<select id="func_select">
+			<option value="ensip10">ENSIP-10: resolve(name, ...)</option>
+			<option value="custom">EIP-3668: custom(...)</option>
+		</select>
+	</div>
+	<div id="ensip10" class="rows">
+		<div class="wide" id="name">
+			<label for="name_field">ENS Name<i></i></label>
+			<input class="big" id="name_field" placeholder="raffy.eth">
+		</div>
+	</div>
+	<div id="custom" class="rows hide">
+		<div class="wide" id="abi">
+			<label for="abi_ta">ABI<i></i></label>
+			<textarea id="abi_ta" rows="3" placeholder="function f(uint256, uint256) view returns (uint256)"></textarea>
+		</div>
+		<div class="wide" id="args">
+			<label for="abi_ta">Arguments (one line per argument)<i></i></label>
+			<textarea name="abi_ta" rows="5" placeholder="arg1&#10;arg2"></textarea>
+		</div>
+	</div>
+	<div id="actions">
+		<div id="spinner" class="spinner hide"></div>
+		<span class="balloon"></span>
+		<label for="protocol_select">Protocol:</label>
+		<select id="protocol_select">
+			<option value="raw">Raw</option>
+			<option value="ens">ENS</option>
+			<option value="tor" selected>TOR</option>
+		</select>
+		<button id="test_btn" disabled>Call</button>
+	</div>
+</div>
+<div id="output"></div>	
+</main>
+<footer>
+	<span>Created by <a href="https://x.com/adraffy">raffy.eth</a></span>
+</footer>
+<script type="module">
+import {ens_normalize} from '../../ens-normalize.js/dist/index.min.js';
+import {ethers} from 'https://cdnjs.cloudflare.com/ajax/libs/ethers/6.12.1/ethers.min.js';
+
+const endpoint_field = document.querySelector('#endpoint input');
+const endpoint_status = document.querySelector('#endpoint label i');
+const func_select = document.querySelector('#func_select');
+const test_btn = document.querySelector('#test_btn');
+const ensip10_div = document.querySelector('#ensip10');
+const name_field = document.querySelector('#name input');
+const name_status = document.querySelector('#name label i');
+const custom_div = document.querySelector('#custom')
+const abi_ta = document.querySelector('#abi textarea');
+const abi_status = document.querySelector('#abi label i');
+const args_ta = document.querySelector('#args textarea');
+const main_spinner = document.querySelector('#actions .spinner');
+
+let call_state;
+
+update_func();
+endpoint_field.addEventListener('input', update_ux);
+name_field.addEventListener('input', update_ux);
+func_select.addEventListener('input', update_func);
+abi_ta.addEventListener('input', update_func);
+args_ta.addEventListener('input', update_func);
+endpoint_field.focus();
+
+function is_custom() {
+	return func_select.value === 'custom';
+}
+
+function update_endpoint() {
+	try {
+		new URL(endpoint_field.value.trim());
+		endpoint_status.innerText = '';
+		return true;
+	} catch (err) {
+		endpoint_status.innerText = `⚠️ ${err.message}`;
+	}
+}
+
+function update_abi() {
+	try {
+		let abi = new ethers.Interface(abi_ta.value.split('\n').map(s => s.trim()).filter(x => x));
+		let funcs = abi.fragments.filter(f => ethers.Fragment.isFunction(f));
+		abi_status.innerText = '';
+		if (!funcs.length)
+		if (funcs.length != 1) throw new Error('expected one function');
+		let func = funcs[0];
+		return {abi, func};
+	} catch (err) {
+		abi_status.innerText = `⚠️ ${err.message}`;
+	}
+	return {};
+}
+
+function update_name() {
+	try {
+		let norm = ens_normalize(name_field.value.trim());
+		if (!norm) throw new Error('empty name');
+		name_status.innerText = '';
+		return norm;
+	} catch (err) {
+		name_status.innerText = `⚠️ ${err.message}`;
+	}
+}
+
+function update_ux() {
+	main_spinner.classList.toggle('hide', !call_state);
+	let ok = update_endpoint();
+	if (!call_state) {
+		if (is_custom()) {
+			let {abi, func} = update_abi();
+			if (!abi) ok = false;
+			// parse ta
+
+		} else {
+			let norm = update_name();
+			if (!norm) ok = false;
+		} 
+	}
+	test_btn.disabled = !ok;
+}
+
+function update_func() {
+	let custom = is_custom();
+	ensip10_div.classList.toggle('hide', custom);
+	custom_div.classList.toggle('hide', !custom);
+	if (!custom) {
+
+
+	}
+	update_ux();
+}
+
+async function try_call() {
+
+}
+
+function create(el, args, ...a) {
+	if (typeof el === 'string') el = document.createElement(el);
+	if (args) {
+		for (let [k, v] of Object.entries(args)) {
+			if (!v) continue;
+			if (v instanceof Function) {
+				el.addEventListener(k, v);
+			} else if (k === 'dataset' || k === 'style') {
+				Object.assign(el[k], v);
+			} else if (k === 'className') {
+				for (let x of [v].flat(Infinity)) {
+					if (typeof x === 'string') {
+						el.classList.add(x);
+					} else if (x) {
+						Object.entries(x).forEach(([k, v]) => el.classList.toggle(k, !!v));
+					}
+				}
+			} else {
+				el[k] = v;
+			}
+		}
+	}
+	el.append(...a);
+	return el;
+}
+</script>
+</body>
+</html>
