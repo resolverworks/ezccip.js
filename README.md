@@ -16,6 +16,7 @@ Turnkey [EIP-3668: CCIP-Read](https://eips.ethereum.org/EIPS/eip-3668) Handler f
     * `multicall(resolve(...))`
     * `multicall(resolve(multicall(...)), ...)`
 * use [`serve()`](#serve) to quickly launch a server
+* use [CCIP Postman](https://adraffy.github.io/ezccip.js/test/postman.html) ⭐️ to debug 
 
 ## Demo
 
@@ -104,7 +105,7 @@ http.close();
 
 ### callRecord()
 
-Apply ENSIP-10 `calldata` to a `Record`-object and generate the corresponding ABI-encoded response.
+Apply ENSIP-10 `calldata` to a `Record`-object and generate the corresponding ABI-encoded response.  This is a pure free-function.
 ```js
 let record = {
 	text(key) { if (key == 'name') return 'raffy'; }
