@@ -5,14 +5,17 @@
 <title>CCIP-Read Postman</title>
 <style>
 .hide { display: none !important; }
-.balloon { flex: 1; }
+.invis { visibility: hidden !important; }
+.balloon { flex: 1 }
 body {
 	margin: 3rem;
 	background: #eee;
 }
+button {
+	padding: 4px 8px;
+}
 button:not(:disabled) {	
 	cursor: pointer;
-	padding: 4px 8px;
 }
 select {
 	padding: 4px 8px;
@@ -23,14 +26,25 @@ header {
 	justify-content: space-between;
 }
 h1 {
-	display: flex;
 	margin: 0;
-	align-items: baseline;
-	gap: 16px;
+}
+#examples {
+	margin: 8px 0;
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	align-items: center;
+	padding-bottom: 8px;
+	border-bottom: 2px solid #fff;
 }
 .rows {
 	display: flex;
 	flex-direction: column;
+	gap: 8px;
+}
+.row {
+	display: flex;
+	align-items: center;
 	gap: 8px;
 }
 #config .field {
@@ -40,11 +54,24 @@ h1 {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: 4px;
+	gap: 8px;
+	min-height: 24px;
 	margin-bottom: 8px;
 }
-label i {
+label button {
 	margin-left: auto;
+}
+label i:before {
+	content: '⚠️';
+	position: relative;
+	margin-right: 2px;
+	font-style: normal;
+	font-size: 95%;
+}
+label i:empty {
+	display: none;
+}
+label i {
 	opacity: .7;
 }
 .wide input,
@@ -59,8 +86,11 @@ label i {
 	min-height: 48px;
 	resize: vertical;
 }
+#sender_field {
+	font: 100% monospace;
+}
 #method_span {
-	padding: 2px 4px;
+	padding: 3px 6px;
 	border-radius: 4px;
 	background-color: #afa;
 	border: 1px solid #ccc;
@@ -73,11 +103,16 @@ label i {
 	display: flex;
 	gap: 8px;
 }
-#actions {
-	display: flex;
-	align-items: center;
-	gap: 8px;
+.type_select, .arg_field {
+	font-family: monospace;
 }
+.delete_btn {
+	aspect-ratio: 1;
+}
+#field_count_lbl {
+	font-weight: bold;
+}
+
 #actions button {
 	padding: 8px;
 	font-size: 100%;
@@ -95,6 +130,16 @@ label i {
 	border-bottom-color: transparent;
 	border-radius: 100%;
 }
+#output {
+	margin-top: 8px;
+	border-top: 2px solid #fff;
+	padding-top: 8px;
+}
+#output textarea {
+	width: 100%;
+	box-sizing: border-box;
+	resize: vertical;
+}
 @keyframes spin {
 	to { transform:rotate(360deg); }
 }
@@ -108,27 +153,40 @@ footer {
 		margin: 1rem;
 	}
 }
-#note {
-	display: block;
-	margin: 8px auto;
-	border: 2px dashed #cc0;
-	padding: 8px;
-	background-color: #ffc;
-	text-align: center;
-}
 </style>
 </head>
 <body>
 <header>
-	<h1>CCIP-Read Postman</h1>
-	<a href="https://github.com/resolverworks/ezccip.sol">resolverworks/ezccip.js</a>
+	<h1><a target="_blank" href="https://eips.ethereum.org/EIPS/eip-3668">CCIP-Read</a> Postman</h1>
+	<a target="_blank" href="https://github.com/resolverworks/ezccip.js">resolverworks/ezccip.js</a>
 </header>
-<div id="note">⚠️ Under Construction</div>
+<div id="examples">
+	<b>Examples:</b>
+	<button
+		data-endpoint="https://raffy.xyz/ezccip/"
+		data-name="raffy.eth"
+		data-fields="text:description,addr:$eth"
+	>Demo Resolve</button>
+	<button
+		data-endpoint="https://raffy.xyz/ezccip/"
+		data-abi="function example(uint256, uint256) returns (uint256)"
+		data-args="1&#10;2"
+	>Demo Function</button>
+	<button 
+		data-endpoint="https://raffy.xyz/tog/multi" 
+		data-name="raffy.eth"
+		data-fields="text:description"
+	>raffy&apos;s TOG</button>
+</div>
 <main>
 <div id="config" class="rows">
 	<div class="wide" id="endpoint">
-		<label for="endpoint_field"><span id="method_span"></span>Endpoint<i></i></label>
+		<label for="endpoint_field">Endpoint<span id="method_span"></span><i></i><button class="invis">Visit ↗️</button></span></label>
 		<input class="big" id="endpoint_field" placeholder="https://raffy.xyz/tog/">
+	</div>
+	<div class="wide" id="sender">
+		<label for="sender_field">Sender<i></i></label>
+		<input id="sender_field" placeholder="0x0000000000000000000000000000000000000000">
 	</div>
 	<div id="options">
 		<select id="func_select">
@@ -138,12 +196,17 @@ footer {
 	</div>
 	<div id="ensip10" class="rows">
 		<div class="wide" id="name">
-			<label for="name_field">ENS Name<i></i></label>
+			<label for="name_field">ENS Name<i></i><button class="invis">↩️ Resolve</button></label>
 			<input class="big" id="name_field" placeholder="raffy.eth">
 		</div>
-		<div class="wide">
-			<span id="field_count_lbl">0 fields</span>
+		<div class="row">
 			<button id="add_field_btn">✍️ Add Field</button>
+			<span id="field_count_lbl">0 fields</span>
+			<select id="multi_select" class="invis">
+				<option value="inner">resolve(multicall())</option>
+				<option value="outer">multicall(resolve())</option>
+			</select>
+			<button id="clear_fields_btn" class="hide" style="margin-left: auto">🧹️ Remove All</button>
 		</div>
 	</div>
 	<div id="custom" class="rows hide">
@@ -156,11 +219,10 @@ footer {
 			<textarea name="abi_ta" rows="5" placeholder="arg1&#10;arg2"></textarea>
 		</div>
 	</div>
-	<div id="actions">
+	<div id="actions" class="row">
 		<div id="spinner" class="spinner hide"></div>
-		<span class="balloon"></span>
-		<label for="protocol_select">Protocol:</label>
-		<select id="protocol_select">
+		<label for="proto_select" style="margin-left: auto">Protocol:</label>
+		<select id="proto_select">
 			<option value="raw">Raw</option>
 			<option value="ens">ENS</option>
 			<option value="tor" selected>TOR</option>
@@ -168,25 +230,48 @@ footer {
 		<button id="test_btn" disabled>Call</button>
 	</div>
 </div>
-<div id="output"></div>	
+<div id="output" class="hide">
+	<textarea readonly rows="20"></textarea>
+</div>
 </main>
 <footer>
 	<span>Created by <a href="https://x.com/adraffy">raffy.eth</a></span>
 </footer>
 <script type="module">
-import {ens_normalize} from '../../ens-normalize.js/dist/index.min.js';
+import {Record, Profile} from '../../enson.js/dist/index.min.js';
 import {ethers} from 'https://cdnjs.cloudflare.com/ajax/libs/ethers/6.12.1/ethers.min.js';
+
+// TODO:
+// add gui log with json/colors/emoji
+// add decoding
+// add custom support
+// add good parser for args
+// add url
+// add localStorage
 
 const TEMPLATE_DATA = '{data}';
 const TEMPLATE_SENDER = '{sender}';
 
-const endpoint_field = document.querySelector('#endpoint input');
+const TYPE_CHASH = 'chash';
+const TYPE_TEXT = 'text';
+const TYPE_ADDR = 'addr';
+
+const ENSIP10_ABI = new ethers.Interface([
+	'function multicall(bytes[] calls) external view returns (bytes[])',
+	'function resolve(bytes, bytes) external view returns (bytes)',
+]);
+
+const endpoint_field = document.querySelector('#endpoint_field');
 const method_span = document.querySelector('#method_span');
 const endpoint_status = document.querySelector('#endpoint label i');
+const endpoint_btn = document.querySelector('#endpoint button');
+const sender_field = document.querySelector('#sender_field');
+const sender_status = document.querySelector('#sender label i');
 const func_select = document.querySelector('#func_select');
 const test_btn = document.querySelector('#test_btn');
 const ensip10_div = document.querySelector('#ensip10');
 const name_field = document.querySelector('#name input');
+const resolve_btn = document.querySelector('#name button');
 const name_status = document.querySelector('#name label i');
 const custom_div = document.querySelector('#custom')
 const abi_ta = document.querySelector('#abi textarea');
@@ -194,20 +279,52 @@ const abi_status = document.querySelector('#abi label i');
 const args_ta = document.querySelector('#args textarea');
 const main_spinner = document.querySelector('#actions .spinner');
 const add_field_btn = document.querySelector('#add_field_btn');
+const clear_fields_btn = document.querySelector('#clear_fields_btn');
+const field_count_lbl = document.querySelector('#field_count_lbl');
+const multi_select = document.querySelector('#multi_select');
+const proto_select = document.querySelector('#proto_select');
+const output_div = document.querySelector('#output');
+const output_ta = document.querySelector('#output textarea');
 
-let call_state;
+let endpoint, sender, name_norm, name_dns, abi, abi_func;
 
 endpoint_field.addEventListener('input', update_ux);
+sender_field.addEventListener('input', update_ux);
 name_field.addEventListener('input', update_ux);
 func_select.addEventListener('input', update_func);
 abi_ta.addEventListener('input', update_func);
 args_ta.addEventListener('input', update_func);
 test_btn.addEventListener('click', try_call);
 add_field_btn.addEventListener('click', () => add_field());
+endpoint_btn.addEventListener('click', () => visit(endpoint));
+clear_fields_btn.addEventListener('click', () => parse_fields(''));
+resolve_btn.addEventListener('click', () => visit(`../../ens-normalize.js/test/resolver.html#${name_norm}`));
+
+function visit(href) {
+	create('a', {target: '_blank', href}).click();
+}
+
+for (let btn of document.querySelectorAll('#examples button')) {
+	btn.addEventListener('click', () => {
+		endpoint_field.value = btn.dataset.endpoint;
+		sender_field.value = btn.dataset.sender || '';
+		proto_select.value = btn.dataset.proto || 'tor';
+		if (btn.dataset.name) {
+			name_field.value = btn.dataset.name;
+			func_select.value = 'ensip10';
+			update_func();
+			parse_fields(btn.dataset.fields);
+		} else {
+			abi_ta.value = btn.dataset.abi;
+			args_ta.value = btn.dataset.args;
+			func_select.value = 'custom';
+			update_func();
+		}
+	});
+}
 
 update_func();
 endpoint_field.focus();
-
 
 function is_custom() {
 	return func_select.value === 'custom';
@@ -215,109 +332,232 @@ function is_custom() {
 
 function parse_endpoint() {
 	try {
-		let url = new URL(endpoint_field.value.trim());
-		url = decodeURI(url.toString());
-		let has_data = url.includes(TEMPLATE_DATA);
-		// let sender = str.includes(TEMPLATE_SENDER);
-		// if (sender != data) throw new Error('expected {sender} and {data}');
-		method_span.innerText = `${has_data ? 'GET' : 'POST'}`;
-		endpoint_status.innerText = '';
-		return url;
+		endpoint = endpoint_field.value.trim();
+		new URL(endpoint.replaceAll(TEMPLATE_SENDER, '0x').replaceAll(TEMPLATE_DATA, '0x'));
+		method_span.innerHTML = endpoint.includes(TEMPLATE_DATA) ? 'GET' : 'POST';
+		endpoint_status.innerHTML = '';
 	} catch (err) {
-		method_span.innerText = '';
-		endpoint_status.innerText = `⚠️ ${err.message}`;
+		endpoint = undefined;
+		method_span.innerHTML = '';
+		endpoint_status.innerHTML = err.message;
 	}
 }
 
-function update_abi() {
+function parse_sender() {
+		try {
+		sender = sender_field.value.trim();
+		sender = sender ? ethers.getAddress(sender) : ethers.ZeroAddress;
+		sender_status.innerHTML = '';
+	} catch (err) {
+		sender = undefined;
+		sender_status.innerHTML = err.shortMessage || err.message;
+	}
+}
+
+function parse_abi() {
 	try {
-		let abi = new ethers.Interface(abi_ta.value.split('\n').map(s => s.trim()).filter(x => x));
+		abi = new ethers.Interface(abi_ta.value.split('\n').map(s => s.trim()).filter(x => x));
 		let funcs = abi.fragments.filter(f => ethers.Fragment.isFunction(f));
-		abi_status.innerText = '';
+		abi_status.innerHTML = '';
 		if (!funcs.length)
 		if (funcs.length != 1) throw new Error('expected one function');
-		let func = funcs[0];
-		return {abi, func};
+		abi_func = funcs[0];
 	} catch (err) {
-		abi_status.innerText = `⚠️ ${err.message}`;
+		abi_status.innerHTML = err.message;
+		abi = undefined;
+		abi_func = undefined;
 	}
-	return {};
 }
 
-function update_name() {
+function parse_name() {
 	try {
-		let norm = ens_normalize(name_field.value.trim());
-		if (!norm) throw new Error('empty name');
-		name_status.innerText = '';
-		return norm;
+		name_norm = ethers.ensNormalize(name_field.value.trim());
+		if (!name_norm) throw new Error('empty name');
+		name_dns = ethers.dnsEncode(name_norm, 255);
+		name_status.innerHTML = '';
 	} catch (err) {
-		name_status.innerText = `⚠️ ${err.message}`;
+		name_norm = undefined;
+		name_status.innerHTML = err.message;
 	}
 }
 
 function update_ux() {
-	main_spinner.classList.toggle('hide', !call_state);
 	let ok = true;
-	let url = parse_endpoint();
-	if (!url) ok = false;
-	//if (!call_state) {
+	parse_endpoint();
+	if (!endpoint) ok = false;
+	endpoint_btn.classList.toggle('invis', !endpoint);
+	parse_sender();
+	if (!sender) ok = false;
 	if (is_custom()) {
-		let {abi, func} = update_abi();
+		parse_abi();
 		if (!abi) ok = false;
 		// parse ta
 
 	} else {
-		let norm = update_name();
-		if (!norm) ok = false;
+		let fields = get_fields();
+		field_count_lbl.innerHTML = `${fields.length} ${plural(fields.length, 'field')}`;
+		clear_fields_btn.classList.toggle('hide', fields.length < 2);
+		multi_select.classList.toggle('invis', fields.length < 2);
+
+		parse_name();
+		resolve_btn.classList.toggle('invis', !name_norm);
+		if (!name_norm) ok = false;
+		if (!fields.length) ok = false;
 	} 
-	//}
-	test_btn.disabled = !ok;
+	test_btn.disabled = !ok || !main_spinner.classList.contains('hide');
 }
 
 function update_func() {
 	let custom = is_custom();
 	ensip10_div.classList.toggle('hide', custom);
 	custom_div.classList.toggle('hide', !custom);
-	if (!custom) {
-
-
-	}
 	update_ux();
 }
 
 function make_call_data() {
 	if (is_custom()) {
-
+		throw new Error('not yet implemented');
 	} else {
-		
+		let profile = new Profile();
+		for (let f of get_fields()) {
+			let type = f.querySelector('.type_select').value;
+			let arg = f.querySelector('.arg_field').value.trim();
+			switch (type) {
+				case TYPE_CHASH: {
+					profile.chash = true;
+					break;
+				}
+				case TYPE_TEXT: {
+					profile.setText(arg);
+					break;
+				}
+				case TYPE_ADDR: {
+					if (!arg) {
+						profile.addr0 = true;
+					} else if (arg.startsWith('$')) {
+						profile.setCoin(arg.slice(1));
+					} else {
+						profile.setCoin(BigInt(arg));
+					}
+					break;
+				}
+				//default: throw new Error('unreachable');
+			}
+		}
+		let calls = profile.makeCallsForName(name_norm);
+		//if (!calls.length) throw new Error('expected fields');
+		if (calls.length == 1) {
+			return ENSIP10_ABI.encodeFunctionData('resolve', [name_dns, call[0]]);
+		} else if (multi_select.value == 'outer') {
+			return ENSIP10_ABI.encodeFunctionData('multicall', [calls.map(call => ENSIP10_ABI.encodeFunctionData('resolve', [name_dns, call]))]);
+		} else {
+			return ENSIP10_ABI.encodeFunctionData('resolve', [name_dns, ENSIP10_ABI.encodeFunctionData('multicall', [calls])]);
+		}
 	}
+}
+
+function log(x) {
+	let date = new Date().toLocaleString(undefined, {
+		hour: '2-digit',
+		minute: '2-digit',
+		second: '2-digit',
+		hour12: false,
+		fractionalSecondDigits: 3
+	});
+	let old = output_ta.value;
+	let line = `${date} ${x}`;
+	output_ta.value = old ? `${old}\n${line}` : line;;	
 }
 
 async function try_call() {
-	let sender = '0x';
-	let data = make_call_data();
-	let url0 = parse_endpoint();
-	let url = url0.replaceAll(TEMPLATE_SENDER, sender).replaceAll(TEMPLATE_DATA, data);
-	let options = {};
-	if (url === url0) {
-		options.method = 'POST';
-		options.headers['content-type'] = 'application/json';
-		options.body = JSON.stringify({sender, data});
+	const t0 = Date.now();
+	output_ta.value = '';
+	output_div.classList.remove('hide');
+	main_spinner.classList.remove('hide');
+	try {
+		let req = make_call_data(name_norm);
+		let url = endpoint.replaceAll(TEMPLATE_SENDER, sender).replaceAll(TEMPLATE_DATA, req);
+		let options = {};
+		if (url === endpoint) {
+			options.method = 'POST';
+			options.headers = {'content-type': 'application/json'};
+			options.body = JSON.stringify({sender, data: req});
+		} else {
+			options.method = 'GET';
+		}
+		
+		log(`Method: ${options.method}`);
+		log(`Endpoint: ${url}`);
+		if (is_custom()) {
+
+		} else {
+
+		}
+		log(`Sender: ${sender}`);
+		log(`Request Data: ${req}`);
+		let res = await fetch(url, options);
+		log(`Response Code: ${res.status}`);
+		let text = await res.text();
+		log(`Response Size: ${ethers.toUtf8Bytes(text).length}bytes`);
+		let json = JSON.parse(text);
+		let {data, message, ...rest} = json;
+		let unknown = Object.keys(rest);
+		if (unknown.length) {
+			log(`Unexpected Response Keys [${unknown.length}]: ${unknown.join(', ')}`);
+		}
+		if (res.ok) {
+			log(`CCIP-Read Success!`);
+			log(`"data" Size: ${ethers.getBytes(data).length}bytes`);
+			log(`Response: ${data}`);
+		} else {
+			log(`CCIP-Read Failed!`);
+			log(`"message": ${message}`);
+		}
+	} catch (err) {
+		log(`Unexpected Error: ${err.message}`);
 	}
-	let t0 = Date.now();
-	let res = await fetch(parse_endpoint(), options);
+	log(`Duration: ${Date.now() - t0}ms`)
+	main_spinner.classList.add('hide');
 }
 
-function add_field() {
+function get_fields() {
+	return [...ensip10_div.querySelectorAll('.field')];
+}
+
+function parse_fields(text) {
+	for (let f of get_fields()) f.remove();
+	for (let part of text.split(',')) {
+		let [type, arg] = part.split(':').map(x => x.trim());
+		if (!type) continue;
+		add_field({type, arg});
+	}
+	update_ux();
+}
+
+function add_field({type, arg} = {}) {
 	let row = create('div', {className: ['wide', 'field']});
-	let profile_select = create('select', {className: 'profile_select'});
-	profile_select.append(create('option', {value: 'text'}, 'Text(key)'));
-	profile_select.append(create('option', {value: 'addrOld'}, 'Addr()'));
-	profile_select.append(create('option', {value: 'addr'}, 'Addr(coin)'));
-	profile_select.append(create('option', {value: 'chash'}, 'Contenthash()'));
+	let type_select = create('select', {className: 'type_select'});
+	type_select.append(create('option', {value: 'text'}, 'text(key)'));
+	type_select.append(create('option', {value: 'addr'}, 'addr(coin?)'));
+	type_select.append(create('option', {value: TYPE_CHASH}, 'contenthash()'));
 	let arg_field = create('input', {className: 'arg_field'});
-	row.append(profile_select, arg_field);
+	let delete_btn = create('button', {
+		innerHTML: '❌️',
+		className: 'delete_btn',
+		click() {
+			row.remove();
+			update_ux();
+		}
+	});
+	type_select.addEventListener('input', () => {		
+		arg_field.placeholder = type_select.value === TYPE_ADDR ? '60 or $eth' : 'url or com.twitter'
+		arg_field.style.visibility = type_select.value === TYPE_CHASH ? 'hidden' : '';
+	});
+	if (type) type_select.value = type;
+	if (arg) arg_field.value = arg;
+	row.append(type_select, arg_field, delete_btn);
 	ensip10_div.append(row);
+	update_ux();
 }
 
 function create(el, args, ...a) {
@@ -345,6 +585,11 @@ function create(el, args, ...a) {
 	el.append(...a);
 	return el;
 }
+
+function plural(n, word, s = 's') {
+	return n == 1 ? word : word + s;
+}
+
 </script>
 </body>
 </html>

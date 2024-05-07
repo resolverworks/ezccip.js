@@ -373,4 +373,3 @@ function write_json(reply, json) {
 }
 
 export { EZCCIP, History, RESOLVE_ABI, asciiize, callRecord, error_with, labels_from_dns_encoded, serve };
-//# sourceMappingURL=index.mjs.map
