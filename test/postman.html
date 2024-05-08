@@ -377,7 +377,7 @@ function parse_name() {
 		name_status.innerHTML = '';
 	} catch (err) {
 		name_norm = undefined;
-		name_status.innerHTML = err.message;
+		name_status.innerHTML = err.shortMessage || err.message;
 	}
 }
 

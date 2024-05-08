@@ -16,7 +16,7 @@ Turnkey [EIP-3668: CCIP-Read](https://eips.ethereum.org/EIPS/eip-3668) Handler f
     * `multicall(resolve(...))`
     * `multicall(resolve(multicall(...)), ...)`
 * use [`serve()`](#serve) to quickly launch a server
-* use [CCIP Postman](https://adraffy.github.io/ezccip.js/test/postman.html) ⭐️ to debug 
+* use [CCIP Postman](https://resolverworks.github.io/ezccip.js/test/postman.html) ⭐️ to debug 
 
 ## Demo
 
