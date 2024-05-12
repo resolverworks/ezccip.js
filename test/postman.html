@@ -20,7 +20,7 @@ button {
 	border-radius: 4px;
 	background-color: #eee;
 	color: #000;
-	font-size: 100%;
+	font-size: 90%;
 	gap: 4px;
 	transition: transform .1s ease;
 }
@@ -76,6 +76,7 @@ button.copy.copied {
 select {
 	padding: 4px 8px;
 	font-size: 100%;
+	cursor: pointer;
 }
 input.code {
 	font: 120% monospace;
@@ -95,9 +96,6 @@ h1 {
 	align-items: center;
 	padding-bottom: 8px;
 	border-bottom: 2px solid #fff;
-}
-#examples button {
-	font-size: 90%;
 }
 .rows {
 	display: flex;
@@ -121,7 +119,6 @@ h1 {
 }
 .header button {
 	margin-left: auto;
-	font-size: 90%;
 }
 .header i::before {
 	content: '⚠️';
@@ -158,15 +155,15 @@ textarea {
 	padding: 3px 6px;
 	border-radius: 4px;
 	background-color: #afa;
-	border: 1px solid #ccc;
+	border: 1px solid #aaa;
 	font: 12px sans-serif;
 }
 #abi_span:empty { display: none; }
 #abi_span {
 	padding: 3px 6px;
 	border-radius: 4px;
-	background-color: #ffa;
-	border: 1px solid #ccc;
+	background-color: #cff;
+	border: 1px solid #aaa;
 	font-family: monospace;
 }
 .field {
@@ -207,6 +204,7 @@ textarea {
 #actions button {
 	padding: 8px;
 	font-size: 100%;
+	align-self: stretch;
 }
 #start_btn {
 	font-weight: bold;
@@ -236,9 +234,8 @@ textarea {
 	padding: 8px;
 	background-color: #fff;
 	font: 13px monospace;
-	line-height: 1.2;
 	white-space: pre-wrap;
-	overflow-wrap: break-word;
+	line-break: anywhere;
 	overflow-y: auto;
 }
 #output pre.clipped {	
@@ -290,6 +287,7 @@ textarea {
 }
 #output .tag.secondary {
 	background-color: #cff;
+	font-size: 11px;
 }
 #output .log.error + pre {
 	background-color: #fee;
@@ -329,6 +327,11 @@ footer {
 		flex: 100%;
 	}
 }
+@media only screen and (max-width: 500px) {	
+	h1 a {
+		display: none;
+	}
+}
 </style>
 </head>
 <body>
@@ -338,7 +341,7 @@ footer {
 </header>
 <div id="examples">
 	<b>Demo:</b>
-	<button data-config='{
+	<button data-prefix="Demo" data-config='{
 		"endpoint":"https://raffy.xyz/ezccip/",
 		"name":"raffy.eth",
 		"fields":[{"type":"text", "arg": "description"}, {"type": "addr", "arg": "$eth"}]
@@ -353,14 +356,14 @@ footer {
 		"calldata": "0x9061b92300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000b0572616666790365746800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008459d1d43c9c8b7ac505c9f0161bbbd04437fce8c630a0886e1ffea00078e298f063a8a5df000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000086c6f636174696f6e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}'>Calldata</button>
 	<b>Examples:</b>
-	<button data-config='{
+	<button data-prefix="Examples" data-config='{
 		"endpoint": "https://raffy.xyz/tog/raffyeth",
 		"name": "raffy.eth",
 		"fields": [{"type":"text", "arg": "description"}, {"type":"text", "arg": "location"}]
 	}'>raffy&apos;s TOG</button>
 	<button data-config='{
 		"endpoint": "https://dnssec-oracle.ens.domains/",
-		"abi": "function resolve(bytes memory name, uint16 qtype) returns (tuple(bytes, bytes)[] memory)",
+		"abi": "function resolve(bytes memory name, uint16 qtype) returns (tuple(bytes, bytes)[] memory rrs)",
 		"args": ["0x076272616e746c7905726f636b7300", "16"],
 		"proto": "raw"
 	}'>OffchainDNSOracle</button>
@@ -433,6 +436,7 @@ footer {
 			<div class="header">
 				<label for="calldata_ta">Calldata</label>
 				<i id="calldata_status"></i>
+				<button id="calldata_btn">🔍️ Lookup</button>
 			</div>
 			<textarea id="calldata_ta" rows="8" placeholder="0x12345678..."></textarea>
 		</div>
@@ -467,6 +471,7 @@ const TYPE_CHASH = 'chash';
 const TYPE_TEXT = 'text';
 const TYPE_ADDR = 'addr';
 const TYPE_NAME = 'name';
+const TYPE_PUBKEY = 'pubkey';
 
 const FUNC_ENSIP10 = 'ensip10';
 const FUNC_ABI = 'abi';
@@ -509,6 +514,7 @@ const abi_status = document.querySelector('#abi_status');
 const abi_span = document.querySelector('#abi_span');
 const calldata_div = document.querySelector('#calldata');
 const calldata_ta = document.querySelector('#calldata_ta');
+const calldata_btn = document.querySelector('#calldata_btn');
 const calldata_status = document.querySelector('#calldata_status');
 const main_spinner = document.querySelector('#actions .spinner');
 const add_field_btn = document.querySelector('#add_field_btn');
@@ -535,7 +541,8 @@ func_select.addEventListener('input', () => {
 });
 abi_ta.addEventListener('input', update_ux);
 calldata_ta.addEventListener('input', update_ux);
-proto_select.addEventListener('click', update_ux);
+calldata_btn.addEventListener('click', () => visit(`https://www.4byte.directory/signatures/?bytes4_signature=${calldata_ta.value.trim().slice(0, 10)}`));
+proto_select.addEventListener('input', update_ux);
 endpoint_btn.addEventListener('click', () => visit(endpoint));
 clear_fields_btn.addEventListener('click', () => {
 	delete_fields();
@@ -549,7 +556,10 @@ stop_btn.addEventListener('click', () => {
 });
 data_btn.addEventListener('click', () => {
 	try {
-		output_div.replaceChildren(create('pre', {innerText: make_calldata()}));
+		start_time = Date.now();
+		output_div.innerHTML = '';
+		append_log('Calldata', {data: make_calldata()});
+		//output_div.replaceChildren(create('pre', {innerText: make_calldata()}));
 	} catch (err) {
 		console.log(err);
 		output_div.replaceChildren(create('div', {className: ['log', 'error'], innerHTML: err.message}));
@@ -562,6 +572,7 @@ add_field_btn.addEventListener('click', e => {
 		for (let x of p.texts) add_field({type: TYPE_TEXT, arg: x});
 		for (let x of p.coins) add_field({type: TYPE_TEXT, arg: `$${Coin.fromType(x).name}`});
 		add_field({type: TYPE_CHASH});
+		add_field({type: TYPE_PUBKEY});
 		add_field({type: TYPE_NAME});
 	} else {
 		add_field();
@@ -669,9 +680,11 @@ function parse_calldata() {
 		let hex = calldata_ta.value.trim();
 		if (!/^(0x)[0-9a-f]*$/i.test(hex)) throw new Error('expected 0x-prefixed hex string');
 		if (hex.length < 10) throw new Error('expected bytes4 selector');
+		calldata_btn.disabled = false;
 		calldata_status.innerHTML = '';
 		return hex;
 	} catch (err) {
+		calldata_btn.disabled = true;
 		calldata_status.innerHTML = err.message;
 	}
 }
@@ -793,14 +806,18 @@ function update_ux() {
 			fields
 		};
 	} 
+
 	start_btn.disabled = !ok;
 	data_btn.disabled = !ok;
+
 	localStorage[STORAGE_KEY] = JSON.stringify({
 		endpoint: endpoint_field.value,
 		sender: sender_field.value,
 		proto: proto_select.value,
 		...config
 	});
+
+	output_div.innerHTML = '';
 }
 
 function make_calldata() {
@@ -817,6 +834,10 @@ function make_calldata() {
 			switch (type) {
 				case TYPE_CHASH: {
 					profile.chash = true;
+					break;
+				}
+				case TYPE_PUBKEY: {
+					profile.pubkey = true;
 					break;
 				}
 				case TYPE_TEXT: {
@@ -845,10 +866,10 @@ function make_calldata() {
 	}
 }
 
-function append_log(primary, {cls, data, time, kind = 'hex', ...rest}) {
+function append_log(primary, {cls, data, time = true, kind = 'hex', ...rest}) {
 	let row = create('div', {className: 'log'});
 	if (cls) row.classList.add(cls);
-	if (!time) time =  `${Math.round(Date.now() - start_time)} ms`;
+	if (time === true) time =  `${Math.round(Date.now() - start_time)} ms`;
 	row.append(create('span', {className: 'time', innerHTML: time}));
 	let tags = create('div', {className: 'tags'});
 	if (typeof primary === 'string') {
@@ -883,7 +904,14 @@ function append_log(primary, {cls, data, time, kind = 'hex', ...rest}) {
 			tags.append(create('span', {className: ['tag', 'size'], innerHTML: `${size} bytes`}));
 		}
 		if (kind === 'json' && typeof data !== 'string') {
-			data = JSON.stringify(data, null, '    ');
+			data = JSON.stringify(data, (_, x) => {
+				if (typeof x === 'bigint') {
+					return ethers.toBeHex(x);
+				} else if (x instanceof Uint8Array) {
+					return ethers.hexlify(x);
+				}
+				return x;
+			}, '    ');
 		}
 		tags.append(create_copy_btn(data));
 		let pre = create('pre', {innerText: data});
@@ -912,14 +940,14 @@ async function try_call() {
 			options.headers = {'content-type': 'application/json'};
 			options.body = JSON.stringify({sender, data: request});
 		}
-		append_log('Request', {
-			data: request, 
-			Method: options.method, 
+		append_log('Request Data', {
+			data: request,
+			Method: options.method,
 			URL: url
 		});
 		let res = await fetch(url, options);
 		let text = await res.text();
-		append_log('Response', {
+		append_log('Server Response', {
 			cls: res.ok ? 'success' : 'error', 
 			'HTTP Status': res.status, 
 			'Content Type': res.headers['content-type'] || SYMBOL_UNSET,
@@ -938,7 +966,7 @@ async function try_call() {
 				let [sig, exp, signed_data] = ethers.AbiCoder.defaultAbiCoder().decode(['bytes', 'uint64', 'bytes'], response);
 				let hash = ethers.solidityPackedKeccak256(['address', 'uint64', 'bytes', 'bytes'], [sender, exp, request, signed_data]);
 				let signed = ethers.verifyMessage(hash, sig);
-				append_log('Signed Response', {
+				append_log('Signed Response Data', {
 					data: signed_data,
 					Protocol: 'TOR', 
 					Hash: hash, 
@@ -949,7 +977,7 @@ async function try_call() {
 				let [signed_data, exp, sig] = ethers.AbiCoder.defaultAbiCoder().decode(['bytes', 'uint64', 'bytes'], response);
 				let hash = ethers.solidityPackedKeccak256(['bytes', 'address', 'uint64', 'bytes', 'bytes'], ['0x1900', sender, exp, request, signed_data]);
 				let signed = ethers.verifyMessage(hash, sig);
-				append_log('Signed Response', {
+				append_log('Signed Response Data', {
 					data: signed_data,
 					Protocol: 'ENS', 
 					Hash: hash,
@@ -957,7 +985,7 @@ async function try_call() {
 				});
 				response = signed_data;
 			} else {
-				append_log('Raw Response', {data: response});
+				append_log('Response Data', {data: response});
 			}
 
 			if (func_select.value === 'ensip10') {
@@ -979,7 +1007,7 @@ async function try_call() {
 				}
 				calls.forEach((call, i) => {
 					let {name, args: [_, arg]} = ENSIP10_ABI.parseTransaction({data: call});
-					append_log(create('span', {className: ['tag', 'secondary'], innerHTML: `${name}(${arg || ''})`}), {
+					append_log(create('span', {className: ['tag', 'secondary'], innerHTML: `${name}(${arg ?? ''})`}), {
 						time: `#${i+1}`,
 						//Call: ENSIP10_ABI.parseTransaction({data: call}).signature,
 						Request: create_copy_btn(call), 
@@ -988,12 +1016,12 @@ async function try_call() {
 				});
 				let record = new Record();
 				record.parseCalls(calls, answers);
-				append_log('Record', {data: record.toJSON(), Fields: record.size, kind: 'json'});
+				append_log('Record', {data: record.toObject(), Fields: record.size, kind: 'json'});
 			} else if (func_select.value === FUNC_ABI) {
 				try {
 					let res = abi.decodeFunctionResult(abi_func, response);
 					let m = abi_func.outputs.map((type, i) => {
-						return [type.name || `[${i}]`, String(res[i])];
+						return [type.name || `[${i}]`, res[i]];
 					});
 					// if (m.length === 1) {
 					// 	append_log({[KEY_PRIMARY]: 'ABI Decoded Response', data: m[0], kind: 'text'}); 
@@ -1029,6 +1057,7 @@ function add_field({type, arg} = {}) {
 	type_select.append(create('option', {value: TYPE_TEXT}, 'text(key)'));
 	type_select.append(create('option', {value: TYPE_ADDR}, 'addr(coin?)'));
 	type_select.append(create('option', {value: TYPE_CHASH}, 'contenthash()'));
+	type_select.append(create('option', {value: TYPE_PUBKEY}, 'pubkey()'));
 	type_select.append(create('option', {value: TYPE_NAME}, 'name()'));
 	//let suggest_select = create('select', {className: 'suggest_select'});
 	let arg_field = create('input', {className: 'arg_field'});
@@ -1066,9 +1095,10 @@ function parse_field(f) {
 	//uggest_select.classList.add('hide');
 	switch (type) {
 		case TYPE_CHASH:
+		case TYPE_PUBKEY:
 		case TYPE_NAME:
-		arg_field.classList.add('invis');
-		return {type};
+			arg_field.classList.add('invis');
+			return {type};
 	}
 	arg_field.classList.remove('invis');
 	let arg = arg_field.value.trim();
