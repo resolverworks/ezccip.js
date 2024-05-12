@@ -1,5 +1,5 @@
 import {ethers} from 'ethers';
-import {EZCCIP, callRecord, serve} from '../src/index.js'; 
+import {EZCCIP, processENSIP10, serve} from '../src/index.js'; 
 import {test, after} from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -26,12 +26,12 @@ function wrap(x) {
 }
 
 // verify calldata dispatch through record
-test('callRecord', async T => {
+test('processENSIP10', async T => {
 	await T.test('text', async () => {
-		assert.equal(iface.decodeFunctionResult('text', await callRecord(record, text_call))[0], record.text());
+		assert.equal(iface.decodeFunctionResult('text', await processENSIP10(record, text_call))[0], record.text());
 	});
 	await T.test('addr', async () => {
-		assert.equal(iface.decodeFunctionResult('addr', await callRecord(record, addr_call))[0], record.addr());
+		assert.equal(iface.decodeFunctionResult('addr', await processENSIP10(record, addr_call))[0], record.addr());
 	});
 });
 

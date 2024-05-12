@@ -3,7 +3,7 @@ import type {SigningKey, BytesLike, BigNumberish, Interface, Result, FunctionFra
 type HexString = string;
 
 export interface Record {
-	addr?(type: number) : Promise<BytesLike | undefined>;
+	addr?(type: bigint) : Promise<BytesLike | undefined>;
 	text?(key: string) : Promise<string | undefined>;
 	contenthash?(): Promise<BytesLike | undefined>;
 	pubkey?(): Promise<{x: BigNumberish, y: BigNumberish} | BytesLike | undefined>; 
@@ -46,7 +46,7 @@ export class EZCCIP {
 	register(abi: string | string[] | Interface, impl: CCIPReadFunction | {[name: string]: CCIPReadFunction}): CCIPReadHandler[];
 	handleRead(sender: HexString, calldata: HexString, config: EZCCIPConfig & {resolver?: HexString}): Promise<{data: HexString, history: History}>;
 }
-export function callRecord(record: Record | undefined, calldata: HexString, multicall?: boolean, history?: History): HexString;
+export function processENSIP10(record: Record | undefined, calldata: HexString, multicall?: boolean, history?: History): HexString;
 
 export function serve(handler: ENSIP10Function | EZCCIP, options?: {
 	log?: boolean | ((...a: any) => any); // default console.log w/date, falsy to disable

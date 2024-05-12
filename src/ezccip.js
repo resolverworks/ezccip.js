@@ -74,7 +74,7 @@ export class EZCCIP {
 			history.show = [name];
 			let record = await get(name, context, history);
 			if (record) history.record = record;
-			return callRecord(record, data, multicall, history.then());
+			return processENSIP10(record, data, multicall, history.then());
 			// returns raw since: abi.decode(abi.encode(x)) == x
 		});
 	}
@@ -171,8 +171,7 @@ export class EZCCIP {
 	}
 }
 
-// rename to processENSIP10()?
-export async function callRecord(record, calldata, multicall = true, history) {	
+export async function processENSIP10(record, calldata, multicall = true, history) {	
 	try {
 		if (history) history.calldata = calldata;
 		let method = calldata.slice(0, 10);
@@ -191,20 +190,19 @@ export async function callRecord(record, calldata, multicall = true, history) {
 			case 'multicall(bytes[])': {
 				if (history) history.show = false;
 				// https://github.com/ensdomains/ens-contracts/blob/staging/contracts/resolvers/IMulticallable.sol
-				res = [await Promise.all(args.calls.map(x => callRecord(record, x, true, history?.enter()).catch(encode_error)))];
+				res = [await Promise.all(args.calls.map(x => processENSIP10(record, x, true, history?.enter()).catch(encode_error)))];
 				break;
 			}
 			case 'addr(bytes32)': {
 				// https://eips.ethereum.org/EIPS/eip-137
-				let value = await record?.addr?.(60);
+				let value = await record?.addr?.(60n);
 				res = [value ? hexlify(value) : '0x'.padEnd(66, '0')]; // ethers bug, doesn't support Uint8Array as address
 				break;
 			}
 			case 'addr(bytes32,uint256)': {
 				// https://eips.ethereum.org/EIPS/eip-2304
-				let type = Number(args.type); // TODO: BigInt => number
-				if (history) history.show = [addr_type_str(type)];
-				let value = await record?.addr?.(type);
+				if (history) history.show = [addr_type_str(args.type)];
+				let value = await record?.addr?.(args.type);
 				res = [value || '0x'];
 				break;
 			}
@@ -262,7 +260,7 @@ function encode_error(err) {
 
 // shorter coin names
 function addr_type_str(type) {
-	const msb = 0x80000000;
+	const msb = 0x80000000n;
 	return type >= msb ? `evm:${type-msb}` : type;
 }
 

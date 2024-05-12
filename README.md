@@ -4,19 +4,18 @@ Turnkey [EIP-3668: CCIP-Read](https://eips.ethereum.org/EIPS/eip-3668) Handler f
 `npm i @resolverworks/ezccip`
 * see [**types**](./dist/index.d.ts) / uses [ethers@6](https://github.com/ethers-io/ethers.js/)
 * works with any server infrastructure
-	* uses minimal imports for serverless
+    * uses minimal imports for serverless
 * implements multiple protocols:
-	* `"tor"` &mdash; [resolverworks/**TheOffchainResolver.sol**](https://github.com/resolverworks/TheOffchainResolver.sol)
-	* `"ens"` &mdash; [ensdomains/**offchain-resolver**](https://github.com/ensdomains/offchain-resolver/) and [ccip.tools](https://ccip.tools/)
-	* `"raw"` &mdash; raw response (EVM Gateway, testing, etc.) 
+    * `"tor"` &mdash; [resolverworks/**TheOffchainResolver.sol**](https://github.com/resolverworks/TheOffchainResolver.sol)
+    * `"ens"` &mdash; [ensdomains/**offchain-resolver**](https://github.com/ensdomains/offchain-resolver/) and [ccip.tools](https://ccip.tools/)
+    * `"raw"` &mdash; raw response (EVM Gateway, testing, etc.) 
 * used by [resolverworks/**TheOffchainGateway.js**](https://github.com/resolverworks/TheOffchainGateway.js)
 * `enableENSIP10()` drop-in support for [resolverworks/**enson.js**](https://github.com/resolverworks/enson.js) **Record**-type
 * supports *Multicall-over-CCIP-Read*
-    * `resolve(multicall(...))`
-    * `multicall(resolve(...))`
-    * `multicall(resolve(multicall(...)), ...)`
+    * `resolve(name, multicall([...]))`
+    * `multicall([resolve(name, ...), ...])`
+    * `multicall([resolve(name, multicall([...])), ...])`
 * use [`serve()`](#serve) to quickly launch a server
-* use [CCIP Postman](https://resolverworks.github.io/ezccip.js/test/postman.html) ⭐️ to debug 
 
 ## Demo
 
@@ -25,11 +24,12 @@ Turnkey [EIP-3668: CCIP-Read](https://eips.ethereum.org/EIPS/eip-3668) Handler f
 
 ### Examples
 
-* **DNS**: [`ezccip.raffy.xyz`](https://adraffy.github.io/ens-normalize.js/test/resolver.html#ezccip.raffy.xyz)
+* **DNS**: [`ezccip.raffy.xyz`](https://adraffy.github.io/ens-normalize.js/test/resolver.html#ezccip.raffy.xyz) (Mainnet)
     * Context: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/`
 * **ENS**: [`ezccip.eth`](https://adraffy.github.io/ens-normalize.js/test/resolver.html?sepolia#ezccip.eth) (Sepolia)
     * Context: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/s`
-
+* [**CCIP Postman**](https://resolverworks.github.io/ezccip.js/test/postman.html) ⭐️
+    * Call any CCIP-Read server directly
 
 ## Usage
 
@@ -58,19 +58,19 @@ ezccip.enableENSIP10(async (name, context) => {
 
 // more complicated example
 let abi = new ethers.Interface([
-	'function f(bytes32 x) return (string)',
-	'function g(uint256 a, uint256 b) return (uint256)',
+    'function f(bytes32 x) return (string)',
+    'function g(uint256 a, uint256 b) return (uint256)',
 ]);
 ezccip.register(abi, { // register multiple functions at once using existing ABI
-	async ['f()']([x], context, history) { // match function by signature
-		history.show = [context.sender]; // replace arguments of f(...) in logger 
-		history.name = 'Chonk'; // rename f() to Chonk() in logger
-		return [context.calldata]; // echo incoming calldata
-	},
-	async ['0xe2179b8e']([a, b], context) {  // match by selector
-		context.protocol = "tor"; // override signing protocol
-		return ethers.toBeHex(1337n, 32); // return raw encoded result
-	}
+    async ['f()']([x], context, history) { // match function by signature
+        history.show = [context.sender]; // replace arguments of f(...) in logger 
+        history.name = 'Chonk'; // rename f() to Chonk() in logger
+        return [context.calldata]; // echo incoming calldata
+    },
+    async ['0xe2179b8e']([a, b], context) {  // match by selector
+        context.protocol = "tor"; // override signing protocol
+        return ethers.toBeHex(1337n, 32); // return raw encoded result
+    }
 });
 ```
 When your server has a request for CCIP-Read, use EZCCIP to produce a response.
@@ -99,7 +99,7 @@ http.close();
 
 * `serve()` will bind requests to the `sender` if the protocol needs a target and no `resolver` was provided.
 * Provide a `resolvers` mapping to pair endpoint suffixes to specific contract deployments.
-	* The [demo](./test/demo.js#L39) uses `s` to correspond to the [Sepolia deployment](https://sepolia.etherscan.io/address/0x9Ec7f2ce83fcDF589487303fA9984942EF80Cb39), which makes requests to the modified endpoint `http://localhost:8016/s` target that contract, regardless of sender. 
+    * The [demo](./test/demo.js#L39) uses `s` to correspond to the [Sepolia deployment](https://sepolia.etherscan.io/address/0x9Ec7f2ce83fcDF589487303fA9984942EF80Cb39), which makes requests to the modified endpoint `http://localhost:8016/s` target that contract, regardless of sender. 
 * An `endpoint` &harr; `contract` pairing is **required** to support wrapped/recursive CCIP calls!
 
 
@@ -108,8 +108,8 @@ http.close();
 Apply ENSIP-10 `calldata` to a `Record`-object and generate the corresponding ABI-encoded response.  This is a pure free-function.
 ```js
 let record = {
-	text(key) { if (key == 'name') return 'raffy'; }
-	addr(type) { if (type == 60) return '0x1234'; }
+    text(key) { if (key == 'name') return 'raffy'; }
+    addr(type) { if (type == 60) return '0x1234'; }
 };
 let calldata = '0x...'; // encodeFunctionData('text', ['name']);
 let res = await callRecord(record, calldata); // encodeFunctionResult('text', ['raffy']);

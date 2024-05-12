@@ -6,20 +6,79 @@
 <style>
 .hide { display: none !important; }
 .invis { visibility: hidden !important; }
-.balloon { flex: 1 }
 body {
 	margin: 3rem;
 	background: #eee;
 }
 button {
+	appearance: none;
+	display: inline-flex;
+	align-items: center;
+	margin: 0;
 	padding: 4px 8px;
+	border: 1px solid #888;
+	border-radius: 4px;
+	background-color: #eee;
+	color: #000;
+	font-size: 100%;
+	gap: 4px;
+	transition: transform .1s ease;
+}
+button:disabled {
+	opacity: .5;
+	pointer-events: none;
+}
+button:hover {
+	transform: scale(1.04);
+	border: 2px solid #000;
+	margin: -1px;
+}
+button:hover:active {
+	transform: unset;
 }
 button:not(:disabled) {	
 	cursor: pointer;
 }
+button.icon {
+	padding: 8px;
+}
+button.copy {
+	flex: 0 0 auto;
+	align-self: center;
+	padding: 0;
+	border: none;
+	width: 28px;
+	height: 28px;
+	border-radius: 4px;
+	background-color: inherit;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23fff' height='24' shape-rendering='geometricPrecision' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' viewBox='0 0 24 24' width='24' style='color:var(--geist-foreground)'%3E%3Cpath d='M6 17C4.89543 17 4 16.1046 4 15V5C4 3.89543 4.89543 3 6 3H13C13.7403 3 14.3866 3.4022 14.7324 4M11 21H18C19.1046 21 20 20.1046 20 19V9C20 7.89543 19.1046 7 18 7H11C9.89543 7 9 7.89543 9 9V19C9 20.1046 9.89543 21 11 21Z'/%3E%3C/svg%3E");
+	background-size: 85%;	
+}
+button.copy:hover {
+	opacity: 1;
+	background-color: #8f8;
+	transform: none;
+	margin: 0;
+}
+button.copy.copied {
+	opacity: 1;
+	background-color: #8f8;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' height='24' shape-rendering='geometricPrecision' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' viewBox='0 0 24 24' width='24' style='color:var(--geist-foreground)'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E");
+}
+#add_field_btn {
+	background-color: #efe;
+}
+.delete_btn {
+	background-color: #fee;
+}
 select {
 	padding: 4px 8px;
 	font-size: 100%;
+}
+input.code {
+	font: 120% monospace;
 }
 header {
 	display: flex;
@@ -37,6 +96,9 @@ h1 {
 	padding-bottom: 8px;
 	border-bottom: 2px solid #fff;
 }
+#examples button {
+	font-size: 90%;
+}
 .rows {
 	display: flex;
 	flex-direction: column;
@@ -50,45 +112,48 @@ h1 {
 #config .field {
 	display: flex;
 }
-.wide label {
+.header {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 8px;
-	min-height: 24px;
 	margin-bottom: 8px;
 }
-label button {
+.header button {
 	margin-left: auto;
+	font-size: 90%;
 }
-label i:before {
+.header i::before {
 	content: '⚠️';
 	position: relative;
 	margin-right: 2px;
 	font-style: normal;
 	font-size: 95%;
 }
-label i:empty {
-	display: none;
-}
-label i {
+.header i:empty { display: none; }
+.header i {
 	opacity: .7;
 }
-.wide input,
-.wide textarea {
+#options {
+	border-top: 2px solid #fff;
+	padding-top: 8px;
+}
+#func_select {
+	width: 100%;
+	font-size: 130%;
+}
+input, textarea {
 	display: block;
 	width: 100%;
 	box-sizing: border-box;
 	padding: 8px;
-	font-size: 150%;
+	font-size: 130%;
 }
-.wide textarea {
-	min-height: 48px;
+textarea {
 	resize: vertical;
+	min-height: 40px;
 }
-#sender_field {
-	font: 100% monospace;
-}
+#method_span:empty { display: none; }
 #method_span {
 	padding: 3px 6px;
 	border-radius: 4px;
@@ -96,30 +161,59 @@ label i {
 	border: 1px solid #ccc;
 	font: 12px sans-serif;
 }
-#method_span:empty {
-	display: none;
+#abi_span:empty { display: none; }
+#abi_span {
+	padding: 3px 6px;
+	border-radius: 4px;
+	background-color: #ffa;
+	border: 1px solid #ccc;
+	font-family: monospace;
 }
 .field {
 	display: flex;
 	gap: 8px;
+	align-items: center;
+}
+.field input {
+	padding: 4px;
+}
+#ensip10 .field {
+	align-items: stretch;
+}
+.field label {
+	flex: 0 0 25%;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	text-align: right;
+}
+.field label span.name {
+	font-weight: bold;
+	line-break: anywhere;
+}
+.field label span.type {
+	font: 11px monospace;
+	opacity: .7;
 }
 .type_select, .arg_field {
-	font-family: monospace;
+	font: 12px monospace;
 }
-.delete_btn {
-	aspect-ratio: 1;
+.suggest_select {
+	width: 30px;
 }
 #field_count_lbl {
 	font-weight: bold;
 }
-
 #actions button {
 	padding: 8px;
 	font-size: 100%;
 }
-#test_btn {
-	margin-left: 8px;
+#start_btn {
 	font-weight: bold;
+	background-color: #afa;
+}
+#stop_btn {
+	background-color: #faa;
 }
 .spinner {
 	width: 24px;
@@ -130,15 +224,90 @@ label i {
 	border-bottom-color: transparent;
 	border-radius: 100%;
 }
+#output:empty { display: none; }
 #output {
 	margin-top: 8px;
 	border-top: 2px solid #fff;
 	padding-top: 8px;
 }
-#output textarea {
-	width: 100%;
-	box-sizing: border-box;
-	resize: vertical;
+#output > pre {
+	margin: 0;
+	border: 1px solid #ccc;
+	padding: 8px;
+	background-color: #fff;
+	font: 13px monospace;
+	line-height: 1.2;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+	overflow-y: auto;
+}
+#output pre.clipped {	
+	max-height: 150px;
+}
+#output .log {
+	padding: 4px;
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+#output .log + .log {
+	border-top: 1px solid #fff;
+}
+#output .time {
+	opacity: .5;
+	font: 11px sans-serif;
+	flex: 0 0 60px;
+	text-align: right;
+}
+#output .tags {
+	display: flex;
+	gap: 4px;
+	flex-wrap: wrap;
+}
+#output .tag {
+	padding: 3px 6px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	background-color: #fff;
+	border-radius: 4px;
+	border: 1px solid #ccc;
+	font: 14px monospace;
+}
+#output .tag .copy {
+	width: 20px;
+	height: 20px;
+}
+#output .log.success { 
+	background: linear-gradient(90deg, #0000, #cfc, #0000);
+}
+#output .log.error {
+	background: linear-gradient(90deg, #0000, #fcc, #0000);
+}
+#output .tag.primary {
+	font: bold 12px sans-serif;
+	background-color: #ffc;
+}
+#output .tag.secondary {
+	background-color: #cff;
+}
+#output .log.error + pre {
+	background-color: #fee;
+}
+#output .tag.size {
+	background-color: #f8eedd;
+	font: 11px sans-serif;
+}
+#output .tag .key {
+	opacity: .5;
+	user-select: none;
+	font: 11px sans-serif;
+	white-space: pre;
+}
+#output .tag .value.null {
+	opacity: .7;
+	font-size: 80%;
+	user-select: none;
 }
 @keyframes spin {
 	to { transform:rotate(360deg); }
@@ -152,6 +321,13 @@ footer {
 	body {
 		margin: 1rem;
 	}
+	#mod_fields {
+		flex-wrap: wrap;
+	}
+	#multi_select {
+		order: 1;
+		flex: 100%;
+	}
 }
 </style>
 </head>
@@ -161,93 +337,128 @@ footer {
 	<a target="_blank" href="https://github.com/resolverworks/ezccip.js">resolverworks/ezccip.js</a>
 </header>
 <div id="examples">
+	<b>Demo:</b>
+	<button data-config='{
+		"endpoint":"https://raffy.xyz/ezccip/",
+		"name":"raffy.eth",
+		"fields":[{"type":"text", "arg": "description"}, {"type": "addr", "arg": "$eth"}]
+	}'>ENSIP-10</button>
+	<button data-config='{
+		"endpoint": "https://raffy.xyz/ezccip/",
+		"abi": "function example(uint256 a, uint256 b) returns (uint256 c)",
+		"args": ["69", "420"]
+	}'>ABI</button>
+	<button data-config='{
+		"endpoint":"https://raffy.xyz/ezccip/",
+		"calldata": "0x9061b92300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000b0572616666790365746800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008459d1d43c9c8b7ac505c9f0161bbbd04437fce8c630a0886e1ffea00078e298f063a8a5df000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000086c6f636174696f6e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+	}'>Calldata</button>
 	<b>Examples:</b>
-	<button
-		data-endpoint="https://raffy.xyz/ezccip/"
-		data-name="raffy.eth"
-		data-fields="text:description,addr:$eth"
-	>Demo Resolve</button>
-	<button
-		data-endpoint="https://raffy.xyz/ezccip/"
-		data-abi="function example(uint256, uint256) returns (uint256)"
-		data-args="1&#10;2"
-	>Demo Function</button>
-	<button 
-		data-endpoint="https://raffy.xyz/tog/multi" 
-		data-name="raffy.eth"
-		data-fields="text:description"
-	>raffy&apos;s TOG</button>
+	<button data-config='{
+		"endpoint": "https://raffy.xyz/tog/raffyeth",
+		"name": "raffy.eth",
+		"fields": [{"type":"text", "arg": "description"}, {"type":"text", "arg": "location"}]
+	}'>raffy&apos;s TOG</button>
+	<button data-config='{
+		"endpoint": "https://dnssec-oracle.ens.domains/",
+		"abi": "function resolve(bytes memory name, uint16 qtype) returns (tuple(bytes, bytes)[] memory)",
+		"args": ["0x076272616e746c7905726f636b7300", "16"],
+		"proto": "raw"
+	}'>OffchainDNSOracle</button>
 </div>
 <main>
 <div id="config" class="rows">
-	<div class="wide" id="endpoint">
-		<label for="endpoint_field">Endpoint<span id="method_span"></span><i></i><button class="invis">Visit ↗️</button></span></label>
+	<div>
+		<div class="header buttoned">
+			<label for="endpoint_field">Endpoint</label>
+			<span id="method_span"></span>
+			<i id="endpoint_status"></i>
+			<button id="endpoint_btn" disabled>↗️ Visit</button>
+		</div>
 		<input class="big" id="endpoint_field" placeholder="https://raffy.xyz/tog/">
 	</div>
-	<div class="wide" id="sender">
-		<label for="sender_field">Sender<i></i></label>
-		<input id="sender_field" placeholder="0x0000000000000000000000000000000000000000">
-	</div>
-	<div id="options">
-		<select id="func_select">
-			<option value="ensip10">ENSIP-10: resolve(name, ...)</option>
-			<option value="custom">EIP-3668: custom(...)</option>
-		</select>
-	</div>
-	<div id="ensip10" class="rows">
-		<div class="wide" id="name">
-			<label for="name_field">ENS Name<i></i><button class="invis">↩️ Resolve</button></label>
-			<input class="big" id="name_field" placeholder="raffy.eth">
+	<div>
+		<div class="header">
+			<label for="sender_field">Sender</label>
+			<i id="sender_status"></i>
 		</div>
-		<div class="row">
-			<button id="add_field_btn">✍️ Add Field</button>
-			<span id="field_count_lbl">0 fields</span>
-			<select id="multi_select" class="invis">
-				<option value="inner">resolve(multicall())</option>
-				<option value="outer">multicall(resolve())</option>
-			</select>
-			<button id="clear_fields_btn" class="hide" style="margin-left: auto">🧹️ Remove All</button>
-		</div>
+		<input id="sender_field" class="code" placeholder="0x0000000000000000000000000000000000000000">
 	</div>
-	<div id="custom" class="rows hide">
-		<div class="wide" id="abi">
-			<label for="abi_ta">ABI<i></i></label>
-			<textarea id="abi_ta" rows="3" placeholder="function f(uint256, uint256) view returns (uint256)"></textarea>
-		</div>
-		<div class="wide" id="args">
-			<label for="abi_ta">Arguments (one line per argument)<i></i></label>
-			<textarea name="abi_ta" rows="5" placeholder="arg1&#10;arg2"></textarea>
-		</div>
-	</div>
-	<div id="actions" class="row">
-		<div id="spinner" class="spinner hide"></div>
-		<label for="proto_select" style="margin-left: auto">Protocol:</label>
+	<div>
+		<label for="proto_select">Protocol:</label>
 		<select id="proto_select">
 			<option value="raw">Raw</option>
 			<option value="ens">ENS</option>
 			<option value="tor" selected>TOR</option>
 		</select>
-		<button id="test_btn" disabled>Call</button>
+		<!-- <input id="signer_field" class="code" placeholder="0x0000000000000000000000000000000000000000"> -->
+	</div>
+	<div id="options">
+		<select id="func_select">
+			<option value="ensip10">ENSIP-10: resolve(name, ...)</option>
+			<option value="abi">Function ABI</option>
+			<option value="calldata">Raw Calldata</option>
+		</select>
+	</div>
+	<div id="ensip10" class="rows hide">
+		<div>
+			<div class="header">
+				<label for="name_field">ENS Name</label>
+				<i id="name_status"></i>
+				<button id="resolve_btn" disabled>↩️ Resolve</button>
+			</div>
+			<input class="big" id="name_field" placeholder="raffy.eth">
+		</div>
+		<div id="mod_fields" class="row">
+			<button id="add_field_btn">✏️ Add Field</button>
+			<span id="field_count_lbl">0 fields</span>
+			<select id="multi_select" class="hide">
+				<option value="inner">resolve(name, multicall([...]))</option>
+				<option value="outer">multicall([resolve(name, ...), ...])</option>
+			</select>
+			<button id="clear_fields_btn" class="hide" style="margin-left: auto">🧹️ Remove All</button>
+		</div>
+	</div>
+	<div id="abi" class="rows hide">
+		<div>
+			<div class="header">
+				<label for="abi_ta">ABI</label>
+				<span id="abi_span"></span>
+				<i id="abi_status"></i>
+			</div>
+			<textarea id="abi_ta" rows="2" placeholder="function f(uint256, uint256) view returns (uint256)"></textarea>
+		</div>
+	</div>
+	<div id="calldata" class="rows hide">
+		<div>
+			<div class="header">
+				<label for="calldata_ta">Calldata</label>
+				<i id="calldata_status"></i>
+			</div>
+			<textarea id="calldata_ta" rows="8" placeholder="0x12345678..."></textarea>
+		</div>
+	</div>
+	<div id="actions" class="row">
+		<div id="spinner" class="spinner hide"></div>
+		<button id="copy_link_btn" style="margin-left: auto">🔗️ Copy Link</button>
+		<button id="data_btn">Calldata</button>
+		<button id="start_btn" disabled>Call</button>
+		<button id="stop_btn" class="hide">🛑️ Stop</button>
 	</div>
 </div>
-<div id="output" class="hide">
-	<textarea readonly rows="20"></textarea>
-</div>
+<div id="output"></div>
 </main>
 <footer>
 	<span>Created by <a href="https://x.com/adraffy">raffy.eth</a></span>
 </footer>
 <script type="module">
-import {Record, Profile} from '../../enson.js/dist/index.min.js';
+import {Coin, Record, Profile} from '../../enson.js/dist/index.min.js';
 import {ethers} from 'https://cdnjs.cloudflare.com/ajax/libs/ethers/6.12.1/ethers.min.js';
 
 // TODO:
-// add gui log with json/colors/emoji
-// add decoding
-// add custom support
-// add good parser for args
-// add url
-// add localStorage
+// fix parsers
+// add converters
+
+const STORAGE_KEY = 'ezccip.config';
 
 const TEMPLATE_DATA = '{data}';
 const TEMPLATE_SENDER = '{sender}';
@@ -255,79 +466,179 @@ const TEMPLATE_SENDER = '{sender}';
 const TYPE_CHASH = 'chash';
 const TYPE_TEXT = 'text';
 const TYPE_ADDR = 'addr';
+const TYPE_NAME = 'name';
+
+const FUNC_ENSIP10 = 'ensip10';
+const FUNC_ABI = 'abi';
+const FUNC_CALLDATA = 'calldata';
+
+const SYMBOL_UNSET = Symbol('unset');
+const KEY_PRIMARY = '__PRIMARY';
+
+const SUGGESTED_KEYS = [...Profile.ENS().texts];
 
 const ENSIP10_ABI = new ethers.Interface([
 	'function multicall(bytes[] calls) external view returns (bytes[])',
 	'function resolve(bytes, bytes) external view returns (bytes)',
+	'function name(bytes32 node) external view returns (string)',
+	'function addr(bytes32 node) external view returns (address)',
+	'function addr(bytes32 node, uint256 type) external view returns (bytes)',
+	'function text(bytes32 node, string key) external view returns (string)',
+	'function contenthash(bytes32 node) external view returns (bytes)',
+	'function pubkey(bytes32 node) external view returns (uint256 x, uint256 y)',
 ]);
 
 const endpoint_field = document.querySelector('#endpoint_field');
 const method_span = document.querySelector('#method_span');
-const endpoint_status = document.querySelector('#endpoint label i');
-const endpoint_btn = document.querySelector('#endpoint button');
+const endpoint_status = document.querySelector('#endpoint_status');
+const endpoint_btn = document.querySelector('#endpoint_btn');
 const sender_field = document.querySelector('#sender_field');
-const sender_status = document.querySelector('#sender label i');
+const sender_status = document.querySelector('#sender_status');
 const func_select = document.querySelector('#func_select');
-const test_btn = document.querySelector('#test_btn');
+const start_btn = document.querySelector('#start_btn');
+const copy_link_btn = document.querySelector('#copy_link_btn');
+const stop_btn = document.querySelector('#stop_btn');
+const data_btn = document.querySelector('#data_btn');
 const ensip10_div = document.querySelector('#ensip10');
-const name_field = document.querySelector('#name input');
-const resolve_btn = document.querySelector('#name button');
-const name_status = document.querySelector('#name label i');
-const custom_div = document.querySelector('#custom')
-const abi_ta = document.querySelector('#abi textarea');
-const abi_status = document.querySelector('#abi label i');
-const args_ta = document.querySelector('#args textarea');
+const name_field = document.querySelector('#name_field');
+const resolve_btn = document.querySelector('#resolve_btn');
+const name_status = document.querySelector('#name_status');
+const abi_div = document.querySelector('#abi');
+const abi_ta = document.querySelector('#abi_ta');
+const abi_status = document.querySelector('#abi_status');
+const abi_span = document.querySelector('#abi_span');
+const calldata_div = document.querySelector('#calldata');
+const calldata_ta = document.querySelector('#calldata_ta');
+const calldata_status = document.querySelector('#calldata_status');
 const main_spinner = document.querySelector('#actions .spinner');
 const add_field_btn = document.querySelector('#add_field_btn');
 const clear_fields_btn = document.querySelector('#clear_fields_btn');
 const field_count_lbl = document.querySelector('#field_count_lbl');
 const multi_select = document.querySelector('#multi_select');
 const proto_select = document.querySelector('#proto_select');
+//const signer_field = document.querySelector('#signer_field');
 const output_div = document.querySelector('#output');
-const output_ta = document.querySelector('#output textarea');
+
+let start_time;
+let aborter;
 
 let endpoint, sender, name_norm, name_dns, abi, abi_func;
+
+const abi_fields = [];
 
 endpoint_field.addEventListener('input', update_ux);
 sender_field.addEventListener('input', update_ux);
 name_field.addEventListener('input', update_ux);
-func_select.addEventListener('input', update_func);
-abi_ta.addEventListener('input', update_func);
-args_ta.addEventListener('input', update_func);
-test_btn.addEventListener('click', try_call);
-add_field_btn.addEventListener('click', () => add_field());
+func_select.addEventListener('input', () => {
+	focus_func();
+	update_ux();
+});
+abi_ta.addEventListener('input', update_ux);
+calldata_ta.addEventListener('input', update_ux);
+proto_select.addEventListener('click', update_ux);
 endpoint_btn.addEventListener('click', () => visit(endpoint));
-clear_fields_btn.addEventListener('click', () => parse_fields(''));
+clear_fields_btn.addEventListener('click', () => {
+	delete_fields();
+	update_ux();
+});
 resolve_btn.addEventListener('click', () => visit(`../../ens-normalize.js/test/resolver.html#${name_norm}`));
-
-function visit(href) {
-	create('a', {target: '_blank', href}).click();
-}
+start_btn.addEventListener('click', try_call);
+stop_btn.addEventListener('click', () => {
+	aborter.abort();
+	stop_btn.disabled = true;
+});
+data_btn.addEventListener('click', () => {
+	try {
+		output_div.replaceChildren(create('pre', {innerText: make_calldata()}));
+	} catch (err) {
+		console.log(err);
+		output_div.replaceChildren(create('div', {className: ['log', 'error'], innerHTML: err.message}));
+	}
+});
+add_field_btn.addEventListener('click', e => { 
+	if (e.altKey) {
+		delete_fields();
+		let p = Profile.ENS();
+		for (let x of p.texts) add_field({type: TYPE_TEXT, arg: x});
+		for (let x of p.coins) add_field({type: TYPE_TEXT, arg: `$${Coin.fromType(x).name}`});
+		add_field({type: TYPE_CHASH});
+		add_field({type: TYPE_NAME});
+	} else {
+		add_field();
+	}
+	update_ux(); 
+});
+copy_link_btn.addEventListener('click', () => {
+	let url = new URL(window.location.href);
+	url.hash = btoa(localStorage[STORAGE_KEY]).replace(/=+$/, '');
+	navigator.clipboard.writeText(url);
+});
+window.addEventListener('hashchange', process_hash);
 
 for (let btn of document.querySelectorAll('#examples button')) {
-	btn.addEventListener('click', () => {
-		endpoint_field.value = btn.dataset.endpoint;
-		sender_field.value = btn.dataset.sender || '';
-		proto_select.value = btn.dataset.proto || 'tor';
-		if (btn.dataset.name) {
-			name_field.value = btn.dataset.name;
-			func_select.value = 'ensip10';
-			update_func();
-			parse_fields(btn.dataset.fields);
-		} else {
-			abi_ta.value = btn.dataset.abi;
-			args_ta.value = btn.dataset.args;
-			func_select.value = 'custom';
-			update_func();
-		}
-	});
+	btn.addEventListener('click', () => load_config(JSON.parse(btn.dataset.config)));
 }
 
-update_func();
-endpoint_field.focus();
+if (!process_hash()) {
+	try {
+		load_config(JSON.parse(localStorage[STORAGE_KEY]));
+	} catch (err) {
+		update_ux();
+	}
+}
 
-function is_custom() {
-	return func_select.value === 'custom';
+function process_hash() {
+	let hash = window.location.hash.slice(1);
+	history.replaceState(null, null, ' ');
+	if (hash) {
+		try {
+			load_config(JSON.parse(atob(hash)));
+			update_ux();
+			return true;
+		} catch (err) {
+			console.log(err);
+		}
+	}
+}
+function load_config(json) {
+	endpoint_field.value = json.endpoint || '';
+	sender_field.value = json.sender || '';
+	proto_select.value = json.proto || 'tor';
+	if (json.abi) {
+		func_select.value = FUNC_ABI;
+		abi_ta.value = json.abi || '';
+		parse_abi();
+		if (abi_func && Array.isArray(json.args)) {
+			abi_func.inputs.forEach((_, i) => {
+				abi_fields[i].querySelector('input').value = json.args[i] || '';
+			});
+		}
+	} else if (json.calldata) {
+		func_select.value = FUNC_CALLDATA;
+		calldata_ta.value = json.calldata || '';
+	} else {
+		func_select.value = FUNC_ENSIP10;
+		name_field.value = json.name || '';
+		multi_select.value = json.multi;
+		if (!multi_select.value) multi_select.selectedIndex = 0;
+		delete_fields();
+		if (Array.isArray(json.fields)) {
+			for (let {type, arg} of json.fields) {
+				add_field({type, arg});
+			}
+		}
+	}
+	update_ux();
+	focus_func();
+}
+function focus_func() {
+	requestAnimationFrame(() => {
+		switch (func_select.value) {
+			case FUNC_ENSIP10: name_field.focus(); break;
+			case FUNC_ABI: abi_ta.focus(); break;
+			case FUNC_CALLDATA: calldata_ta.focus(); break;
+		}
+	})
 }
 
 function parse_endpoint() {
@@ -339,12 +650,12 @@ function parse_endpoint() {
 	} catch (err) {
 		endpoint = undefined;
 		method_span.innerHTML = '';
-		endpoint_status.innerHTML = err.message;
+		endpoint_status.innerHTML = 'Invalid URL';
 	}
+	endpoint_btn.disabled = !endpoint;
 }
-
 function parse_sender() {
-		try {
+	try {
 		sender = sender_field.value.trim();
 		sender = sender ? ethers.getAddress(sender) : ethers.ZeroAddress;
 		sender_status.innerHTML = '';
@@ -353,75 +664,156 @@ function parse_sender() {
 		sender_status.innerHTML = err.shortMessage || err.message;
 	}
 }
-
+function parse_calldata() {
+	try {
+		let hex = calldata_ta.value.trim();
+		if (!/^(0x)[0-9a-f]*$/i.test(hex)) throw new Error('expected 0x-prefixed hex string');
+		if (hex.length < 10) throw new Error('expected bytes4 selector');
+		calldata_status.innerHTML = '';
+		return hex;
+	} catch (err) {
+		calldata_status.innerHTML = err.message;
+	}
+}
 function parse_abi() {
 	try {
 		abi = new ethers.Interface(abi_ta.value.split('\n').map(s => s.trim()).filter(x => x));
 		let funcs = abi.fragments.filter(f => ethers.Fragment.isFunction(f));
-		abi_status.innerHTML = '';
 		if (!funcs.length)
 		if (funcs.length != 1) throw new Error('expected one function');
 		abi_func = funcs[0];
+		abi_span.innerHTML = abi_func.selector;
+		abi_status.innerHTML = '';
 	} catch (err) {
-		abi_status.innerHTML = err.message;
 		abi = undefined;
 		abi_func = undefined;
+		abi_status.innerText = err.shortMessage || err.message;
+		abi_fields.forEach(x => x.classList.add('hide'));
+		return;
+	}
+	const n = abi_func.inputs.length;
+	for (let i = n; i < abi_fields.length; i++) {
+		abi_fields[i].classList.add('hide');
+	}
+	for (let i = 0; i < n; i++) {
+		let row = abi_fields[i];
+		if (!row) {
+			row = create('div', {className: ['wide', 'field']});
+			let name = `#abi_${i}`;
+			row.append(create('label', {for: name}, 
+				create('span', {className: 'name'}),
+				create('span', {className: 'type'})
+			));
+			row.append(create('input', {name}));
+			abi_fields[i] = row;
+			abi_div.append(row);
+		}
+		let param = abi_func.inputs[i];
+		row.classList.remove('hide');
+		row.querySelector('.name').innerText = param.name;
+		row.querySelector('.type').innerText = param.type;
 	}
 }
-
 function parse_name() {
 	try {
-		name_norm = ethers.ensNormalize(name_field.value.trim());
-		if (!name_norm) throw new Error('empty name');
+		let name = name_field.value.trim();
+		if (!name) throw new Error('empty name');
+		name_norm = ethers.ensNormalize(name);
 		name_dns = ethers.dnsEncode(name_norm, 255);
 		name_status.innerHTML = '';
 	} catch (err) {
 		name_norm = undefined;
-		name_status.innerHTML = err.shortMessage || err.message;
+		let message = err.shortMessage || err.message;
+		let match = message.match(/^invalid ENS name \((.*)\)$/);
+		if (match) message = match[1];
+		name_status.innerHTML = message;
 	}
 }
 
+function parse_type(param, input) {
+	switch (param.type) {
+		case 'boolean': return parse_as_json(input, 'boolean');
+		case 'string':  return parse_as_json(input, 'string');
+		case 'bytes': return ethers.hexlify(input);
+	}
+	if (param.type.startsWith('uint')) {
+		return BigInt(input);
+	}
+}
+function parse_as_json(input, type, test) {
+	try {
+		let value = JSON.parse(input);
+		if (test ? test(value) : typeof value === type) {
+			return value;
+		}
+	} catch (err) {	
+	}
+	throw new Error(`expected ${type}: "${input}"`);
+}
+
+
 function update_ux() {
+
+	const func = func_select.value;
+	ensip10_div.classList.toggle('hide',  func !== FUNC_ENSIP10);
+	abi_div.classList.toggle('hide',      func !== FUNC_ABI);
+	calldata_div.classList.toggle('hide', func !== FUNC_CALLDATA);
+	
+	let config;
 	let ok = true;
 	parse_endpoint();
 	if (!endpoint) ok = false;
-	endpoint_btn.classList.toggle('invis', !endpoint);
 	parse_sender();
 	if (!sender) ok = false;
-	if (is_custom()) {
+	
+	if (func === FUNC_ABI) {
 		parse_abi();
 		if (!abi) ok = false;
-		// parse ta
-
+		config = {
+			abi: abi_ta.value.trim(),
+			args: Array.from(abi_func.inputs, (_, i) => abi_fields[i].querySelector('input').value.trim()) 
+		};
+	} else if (func === FUNC_CALLDATA) {
+		if (!parse_calldata()) ok = false;
+		config = {
+			calldata: calldata_ta.value.trim()
+		};
 	} else {
-		let fields = get_fields();
+		let fields = get_fields().map(parse_field);
 		field_count_lbl.innerHTML = `${fields.length} ${plural(fields.length, 'field')}`;
 		clear_fields_btn.classList.toggle('hide', fields.length < 2);
-		multi_select.classList.toggle('invis', fields.length < 2);
-
-		parse_name();
-		resolve_btn.classList.toggle('invis', !name_norm);
-		if (!name_norm) ok = false;
+		multi_select.classList.toggle('hide', fields.length < 2);
 		if (!fields.length) ok = false;
+		parse_name();
+		resolve_btn.disabled = !name_norm;
+		if (fields.some(x => x.error)) ok = false;
+		config = {
+			name: name_field.value,
+			multi: multi_select.value,
+			fields
+		};
 	} 
-	test_btn.disabled = !ok || !main_spinner.classList.contains('hide');
+	start_btn.disabled = !ok;
+	data_btn.disabled = !ok;
+	localStorage[STORAGE_KEY] = JSON.stringify({
+		endpoint: endpoint_field.value,
+		sender: sender_field.value,
+		proto: proto_select.value,
+		...config
+	});
 }
 
-function update_func() {
-	let custom = is_custom();
-	ensip10_div.classList.toggle('hide', custom);
-	custom_div.classList.toggle('hide', !custom);
-	update_ux();
-}
-
-function make_call_data() {
-	if (is_custom()) {
-		throw new Error('not yet implemented');
+function make_calldata() {
+	if (func_select.value === FUNC_ABI) {
+		return abi.encodeFunctionData(abi_func, abi_func.inputs.map((x, i) => {
+			return parse_type(x, abi_fields[i].querySelector('input').value.trim());
+		}));
+	} else if (func_select.value === FUNC_CALLDATA) {
+		return calldata_ta.value.trim();
 	} else {
 		let profile = new Profile();
 		for (let f of get_fields()) {
-			let type = f.querySelector('.type_select').value;
-			let arg = f.querySelector('.arg_field').value.trim();
+			let {type, arg} = parse_field(f);
 			switch (type) {
 				case TYPE_CHASH: {
 					profile.chash = true;
@@ -432,22 +824,19 @@ function make_call_data() {
 					break;
 				}
 				case TYPE_ADDR: {
-					if (!arg) {
-						profile.addr0 = true;
-					} else if (arg.startsWith('$')) {
-						profile.setCoin(arg.slice(1));
+					let coin = parse_coin(arg);
+					if (coin) {
+						profile.setCoin(coin);
 					} else {
-						profile.setCoin(BigInt(arg));
+						profile.addr0 = true;
 					}
 					break;
 				}
-				//default: throw new Error('unreachable');
 			}
 		}
 		let calls = profile.makeCallsForName(name_norm);
-		//if (!calls.length) throw new Error('expected fields');
 		if (calls.length == 1) {
-			return ENSIP10_ABI.encodeFunctionData('resolve', [name_dns, call[0]]);
+			return ENSIP10_ABI.encodeFunctionData('resolve', [name_dns, calls[0]]);
 		} else if (multi_select.value == 'outer') {
 			return ENSIP10_ABI.encodeFunctionData('multicall', [calls.map(call => ENSIP10_ABI.encodeFunctionData('resolve', [name_dns, call]))]);
 		} else {
@@ -456,108 +845,267 @@ function make_call_data() {
 	}
 }
 
-function log(x) {
-	let date = new Date().toLocaleString(undefined, {
-		hour: '2-digit',
-		minute: '2-digit',
-		second: '2-digit',
-		hour12: false,
-		fractionalSecondDigits: 3
-	});
-	let old = output_ta.value;
-	let line = `${date} ${x}`;
-	output_ta.value = old ? `${old}\n${line}` : line;;	
+function append_log(primary, {cls, data, time, kind = 'hex', ...rest}) {
+	let row = create('div', {className: 'log'});
+	if (cls) row.classList.add(cls);
+	if (!time) time =  `${Math.round(Date.now() - start_time)} ms`;
+	row.append(create('span', {className: 'time', innerHTML: time}));
+	let tags = create('div', {className: 'tags'});
+	if (typeof primary === 'string') {
+		tags.append(create('span', {className: ['tag', 'primary'], innerText: primary}));
+	} else if (primary) {
+		tags.append(primary);
+	}
+	for (let [k, v] of Object.entries(rest)) {
+		let tag = create('span', {className: 'tag'});
+		let value = create('span', {className: 'value'});
+		if (v instanceof HTMLElement) {
+			value = v;
+		} else if (v === SYMBOL_UNSET) {
+			value.classList.add('null');
+			value.innerText = '«null»';
+		} else {
+			value.innerText = v;
+		}
+		tag.append(create('span', {className: 'key', innerText: k}), value);
+		tags.append(tag);
+	}
+	row.append(tags);
+	output_div.append(row);
+	if (data) {
+		let size;
+		if (kind === 'hex') {
+			size = ethers.getBytes(data).length;
+		} else if (kind === 'text') {
+			size = ethers.toUtf8Bytes(data).length;
+		}
+		if (Number.isInteger(size)) {
+			tags.append(create('span', {className: ['tag', 'size'], innerHTML: `${size} bytes`}));
+		}
+		if (kind === 'json' && typeof data !== 'string') {
+			data = JSON.stringify(data, null, '    ');
+		}
+		tags.append(create_copy_btn(data));
+		let pre = create('pre', {innerText: data});
+		if (size >= 1000) pre.classList.add('clipped');
+		output_div.append(pre);
+	}
 }
-
 async function try_call() {
-	const t0 = Date.now();
-	output_ta.value = '';
-	output_div.classList.remove('hide');
+	start_time = Date.now();
+	aborter = new AbortController();
+	output_div.innerHTML = '';
 	main_spinner.classList.remove('hide');
+	start_btn.classList.add('hide');
+	stop_btn.disabled = false;
+	stop_btn.classList.remove('hide');
+	//let signer = signer_field.value.trim();
 	try {
-		let req = make_call_data(name_norm);
-		let url = endpoint.replaceAll(TEMPLATE_SENDER, sender).replaceAll(TEMPLATE_DATA, req);
-		let options = {};
+		let request = make_calldata();
+		let url = endpoint.replaceAll(TEMPLATE_SENDER, sender).replaceAll(TEMPLATE_DATA, request);
+		let options = {
+			method: 'GET',
+			signal: aborter.signal,
+		};
 		if (url === endpoint) {
 			options.method = 'POST';
 			options.headers = {'content-type': 'application/json'};
-			options.body = JSON.stringify({sender, data: req});
-		} else {
-			options.method = 'GET';
+			options.body = JSON.stringify({sender, data: request});
 		}
-		
-		log(`Method: ${options.method}`);
-		log(`Endpoint: ${url}`);
-		if (is_custom()) {
-
-		} else {
-
-		}
-		log(`Sender: ${sender}`);
-		log(`Request Data: ${req}`);
+		append_log('Request', {
+			data: request, 
+			Method: options.method, 
+			URL: url
+		});
 		let res = await fetch(url, options);
-		log(`Response Code: ${res.status}`);
 		let text = await res.text();
-		log(`Response Size: ${ethers.toUtf8Bytes(text).length}bytes`);
+		append_log('Response', {
+			cls: res.ok ? 'success' : 'error', 
+			'HTTP Status': res.status, 
+			'Content Type': res.headers['content-type'] || SYMBOL_UNSET,
+			data: text, 
+			kind: 'text'
+		});
 		let json = JSON.parse(text);
-		let {data, message, ...rest} = json;
+		let {data: response, message, ...rest} = json;
 		let unknown = Object.keys(rest);
 		if (unknown.length) {
-			log(`Unexpected Response Keys [${unknown.length}]: ${unknown.join(', ')}`);
+			append_log(null, {Warning: 'Unexpected Response Keys', Keys: unknown.join(', ')});
 		}
 		if (res.ok) {
-			log(`CCIP-Read Success!`);
-			log(`"data" Size: ${ethers.getBytes(data).length}bytes`);
-			log(`Response: ${data}`);
+			//append_log({[KEY_PRIMARY]: `"data"`, data: response});
+			if (proto_select.value === 'tor') {
+				let [sig, exp, signed_data] = ethers.AbiCoder.defaultAbiCoder().decode(['bytes', 'uint64', 'bytes'], response);
+				let hash = ethers.solidityPackedKeccak256(['address', 'uint64', 'bytes', 'bytes'], [sender, exp, request, signed_data]);
+				let signed = ethers.verifyMessage(hash, sig);
+				append_log('Signed Response', {
+					data: signed_data,
+					Protocol: 'TOR', 
+					Hash: hash, 
+					'Signed by': signed,
+				});
+				response = signed_data;
+			} else if (proto_select.value === 'ens') {
+				let [signed_data, exp, sig] = ethers.AbiCoder.defaultAbiCoder().decode(['bytes', 'uint64', 'bytes'], response);
+				let hash = ethers.solidityPackedKeccak256(['bytes', 'address', 'uint64', 'bytes', 'bytes'], ['0x1900', sender, exp, request, signed_data]);
+				let signed = ethers.verifyMessage(hash, sig);
+				append_log('Signed Response', {
+					data: signed_data,
+					Protocol: 'ENS', 
+					Hash: hash,
+					'Signed by': signed
+				});
+				response = signed_data;
+			} else {
+				append_log('Raw Response', {data: response});
+			}
+
+			if (func_select.value === 'ensip10') {
+				let parsed = ENSIP10_ABI.parseTransaction({data: request});
+				let calls, answers;
+				let multicall = ENSIP10_ABI.getFunction('multicall');
+				if (parsed.name === 'resolve') {
+					let call = parsed.args[1];
+					if (call.startsWith(multicall.selector)) {
+						[calls] = ENSIP10_ABI.decodeFunctionData(multicall, call);
+						[answers] = ENSIP10_ABI.decodeFunctionResult(multicall, response);
+					} else {
+						calls = [call];
+						answers = [response];
+					}
+				} else {
+					calls = parsed.args[0].toArray().map(call => ENSIP10_ABI.decodeFunctionData('resolve', call)[1]);
+					[answers] = ENSIP10_ABI.decodeFunctionResult(multicall, response);
+				}
+				calls.forEach((call, i) => {
+					let {name, args: [_, arg]} = ENSIP10_ABI.parseTransaction({data: call});
+					append_log(create('span', {className: ['tag', 'secondary'], innerHTML: `${name}(${arg || ''})`}), {
+						time: `#${i+1}`,
+						//Call: ENSIP10_ABI.parseTransaction({data: call}).signature,
+						Request: create_copy_btn(call), 
+						Response: create_copy_btn(answers[i])
+					});
+				});
+				let record = new Record();
+				record.parseCalls(calls, answers);
+				append_log('Record', {data: record.toJSON(), Fields: record.size, kind: 'json'});
+			} else if (func_select.value === FUNC_ABI) {
+				try {
+					let res = abi.decodeFunctionResult(abi_func, response);
+					let m = abi_func.outputs.map((type, i) => {
+						return [type.name || `[${i}]`, String(res[i])];
+					});
+					// if (m.length === 1) {
+					// 	append_log({[KEY_PRIMARY]: 'ABI Decoded Response', data: m[0], kind: 'text'}); 
+					// } else {
+					append_log('ABI Decoded Response', {Outputs: res.length, data: Object.fromEntries(m), kind: 'json'});
+				} catch (err) {
+					append_log('ABI Decode Error', {cls: 'error', Error: err.message});
+				}
+			}
 		} else {
-			log(`CCIP-Read Failed!`);
-			log(`"message": ${message}`);
+			append_log('CCIP-Read Error', {cls: 'error', data: message, kind: 'text'});
 		}
 	} catch (err) {
-		log(`Unexpected Error: ${err.message}`);
+		append_log('Unknown Error', {cls: 'error', data: err.message});
+		console.log(err);
 	}
-	log(`Duration: ${Date.now() - t0}ms`)
+	append_log(null, {Duration: `${((Date.now() - start_time)/1000).toFixed(2)} sec`});
 	main_spinner.classList.add('hide');
+	start_btn.classList.remove('hide');
+	stop_btn.classList.add('hide');
 }
 
+function delete_fields() {
+	get_fields().forEach(x => x.remove());
+}
 function get_fields() {
 	return [...ensip10_div.querySelectorAll('.field')];
-}
-
-function parse_fields(text) {
-	for (let f of get_fields()) f.remove();
-	for (let part of text.split(',')) {
-		let [type, arg] = part.split(':').map(x => x.trim());
-		if (!type) continue;
-		add_field({type, arg});
-	}
-	update_ux();
 }
 
 function add_field({type, arg} = {}) {
 	let row = create('div', {className: ['wide', 'field']});
 	let type_select = create('select', {className: 'type_select'});
-	type_select.append(create('option', {value: 'text'}, 'text(key)'));
-	type_select.append(create('option', {value: 'addr'}, 'addr(coin?)'));
+	type_select.append(create('option', {value: TYPE_TEXT}, 'text(key)'));
+	type_select.append(create('option', {value: TYPE_ADDR}, 'addr(coin?)'));
 	type_select.append(create('option', {value: TYPE_CHASH}, 'contenthash()'));
+	type_select.append(create('option', {value: TYPE_NAME}, 'name()'));
+	//let suggest_select = create('select', {className: 'suggest_select'});
 	let arg_field = create('input', {className: 'arg_field'});
 	let delete_btn = create('button', {
-		innerHTML: '❌️',
-		className: 'delete_btn',
+		innerHTML: '<svg height="16" stroke-linejoin="round" style="color: currentcolor;" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.75 2.75C6.75 2.05964 7.30964 1.5 8 1.5C8.69036 1.5 9.25 2.05964 9.25 2.75V3H6.75V2.75ZM5.25 3V2.75C5.25 1.23122 6.48122 0 8 0C9.51878 0 10.75 1.23122 10.75 2.75V3H12.9201H14.25H15V4.5H14.25H13.8846L13.1776 13.6917C13.0774 14.9942 11.9913 16 10.6849 16H5.31508C4.00874 16 2.92263 14.9942 2.82244 13.6917L2.11538 4.5H1.75H1V3H1.75H3.07988H5.25ZM4.31802 13.5767L3.61982 4.5H12.3802L11.682 13.5767C11.6419 14.0977 11.2075 14.5 10.6849 14.5H5.31508C4.79254 14.5 4.3581 14.0977 4.31802 13.5767Z" fill="currentColor"></path></svg>',
+		className: ['delete_btn', 'icon'],
 		click() {
 			row.remove();
 			update_ux();
 		}
 	});
-	type_select.addEventListener('input', () => {		
-		arg_field.placeholder = type_select.value === TYPE_ADDR ? '60 or $eth' : 'url or com.twitter'
-		arg_field.style.visibility = type_select.value === TYPE_CHASH ? 'hidden' : '';
+	type_select.addEventListener('input', () => {
+		arg_field.value = '';
+		update_ux();
 	});
+	arg_field.addEventListener('input', update_ux);
+	// suggest_select.addEventListener('input', () => {
+	// 	arg_field.value = suggest_select.value;
+	// 	suggest_select.selectedIndex = -1;
+	// 	update_ux();
+	// });
 	if (type) type_select.value = type;
 	if (arg) arg_field.value = arg;
-	row.append(type_select, arg_field, delete_btn);
+	row.append(delete_btn, type_select, arg_field); //, suggest_select);
 	ensip10_div.append(row);
-	update_ux();
+	Object.assign(row, {
+		arg_field,
+		type_select,
+		//suggest_select
+	});
+}
+
+function parse_field(f) {
+	const {type_select: {value: type}, arg_field} = f;
+	//uggest_select.classList.add('hide');
+	switch (type) {
+		case TYPE_CHASH:
+		case TYPE_NAME:
+		arg_field.classList.add('invis');
+		return {type};
+	}
+	arg_field.classList.remove('invis');
+	let arg = arg_field.value.trim();
+	if (type === TYPE_TEXT) {
+		arg_field.placeholder = 'key';
+		// suggest_select.replaceChildren(...Array.from(SUGGESTED_KEYS, x => create('option', null, x)));
+		// suggest_select.selectedIndex = -1; 
+		// suggest_select.classList.remove('hide');
+		if (!arg) return {type, error: true};
+		if (arg.startsWith('"') && arg.endsWith('"')) { // unwrap quoted
+			try {
+				arg = JSON.parse(arg);
+			} catch (err) {
+			}
+		}
+	} else {
+		arg_field.placeholder = 'coinType • $abbr • <empty>';
+		//suggest_select.replaceChildren(...Array.from(Coin, x => create('option', {value: `$${x.name}`}, x.title)));
+		try {
+			parse_coin(arg);
+		} catch (err) {
+			return {type, error: true};
+		}
+	}
+	return {type, arg};
+}
+
+function parse_coin(s) {
+	if (!s) {
+		return;
+	} else if (s.startsWith('$')) {
+		return Coin.fromName(s.slice(1));
+	} else if (/^(0x)?[0-9a-f]+$/i.test(s)) {
+		return Coin.fromType(BigInt(s));
+	} else {
+		throw new Error('unknown coin format');
+	}
 }
 
 function create(el, args, ...a) {
@@ -585,11 +1133,24 @@ function create(el, args, ...a) {
 	el.append(...a);
 	return el;
 }
-
+function create_copy_btn(s) {
+	return create('button', {
+		className: 'copy', 
+		click() {
+			const cls = 'copied';
+			document.querySelectorAll(`.${cls}`).forEach(x => x.classList.remove(cls));
+			navigator.clipboard.writeText(s);
+			this.classList.add(cls);
+			setTimeout(() => this.classList.remove(cls), 2000);
+		}
+	});
+}
+function visit(href) {
+	create('a', {target: '_blank', href}).click();
+}
 function plural(n, word, s = 's') {
 	return n == 1 ? word : word + s;
 }
-
 </script>
 </body>
 </html>
