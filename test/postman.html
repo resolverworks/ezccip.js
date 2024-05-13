@@ -1035,7 +1035,7 @@ async function try_call() {
 			append_log('CCIP-Read Error', {cls: 'error', data: message, kind: 'text'});
 		}
 	} catch (err) {
-		append_log('Unknown Error', {cls: 'error', data: err.message});
+		append_log('Unexpected Error', {cls: 'error', data: err.message, kind: 'text'});
 		console.log(err);
 	}
 	append_log(null, {Duration: `${((Date.now() - start_time)/1000).toFixed(2)} sec`});
