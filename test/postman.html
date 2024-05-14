@@ -238,6 +238,9 @@ textarea {
 	line-break: anywhere;
 	overflow-y: auto;
 }
+#output pre + pre {
+	margin-top: 4px;
+}
 #output pre.clipped {	
 	max-height: 150px;
 }
@@ -262,33 +265,40 @@ textarea {
 	flex-wrap: wrap;
 }
 #output .tag {
-	padding: 3px 6px;
+	padding: 4px 8px;
 	display: flex;
 	align-items: center;
 	gap: 6px;
 	background-color: #fff;
 	border-radius: 4px;
 	border: 1px solid #ccc;
-	font: 14px monospace;
+	font: 14px sans-serif;
 	word-break: break-word;
+}
+#output .tag.code {
+	font: 14px monospace;
+}
+#output .tag.http {
+	background-color: #def;
+}
+#output .tag.primary {
+	font: bold 12px sans-serif;
+	background-color: #ffc;
+}
+#output .tag.record {
+	background-color: #cff;
+	font-size: 12px;
 }
 #output .tag .copy {
 	width: 20px;
 	height: 20px;
+	margin-right: -4px;
 }
 #output .log.success { 
 	background: linear-gradient(90deg, #0000, #cfc, #0000);
 }
 #output .log.error {
 	background: linear-gradient(90deg, #0000, #fcc, #0000);
-}
-#output .tag.primary {
-	font: bold 12px sans-serif;
-	background-color: #ffc;
-}
-#output .tag.secondary {
-	background-color: #cff;
-	font-size: 11px;
 }
 #output .log.error + pre {
 	background-color: #fee;
@@ -413,7 +423,7 @@ footer {
 			<input class="big" id="name_field" placeholder="raffy.eth">
 		</div>
 		<div id="mod_fields" class="row">
-			<button id="add_field_btn">✏️ Add Field</button>
+			<button id="add_field_btn" title="[ALT] Add Default Profile">✏️ Add Field</button>
 			<span id="field_count_lbl">0 fields</span>
 			<select id="multi_select" class="hide">
 				<option value="inner">resolve(name, multicall([...]))</option>
@@ -558,9 +568,10 @@ stop_btn.addEventListener('click', () => {
 data_btn.addEventListener('click', () => {
 	try {
 		start_time = Date.now();
-		output_div.innerHTML = '';
-		append_log('Calldata', {data: make_calldata()});
-		//output_div.replaceChildren(create('pre', {innerText: make_calldata()}));
+		let row = create_log({title: 'Calldata'});
+		add_tag(row, create_tag('Signature', abi_func.format(), 'code'));
+		add_tag(row, create_tag('Inputs', abi_func.inputs.length));
+		output_div.replaceChildren(row, create_pre(make_calldata(), true, row));
 	} catch (err) {
 		console.log(err);
 		output_div.replaceChildren(create('div', {className: ['log', 'error'], innerHTML: err.message}));
@@ -867,65 +878,6 @@ function make_calldata() {
 	}
 }
 
-function append_log(primary, {cls, data, time = true, kind = 'hex', ...rest}) {
-	let row = create('div', {className: 'log'});
-	if (cls) row.classList.add(cls);
-	if (time === true) time =  `${Math.round(Date.now() - start_time)} ms`;
-	row.append(create('span', {className: 'time', innerHTML: time}));
-	let tags = create('div', {className: 'tags'});
-	if (typeof primary === 'string') {
-		tags.append(create('span', {className: ['tag', 'primary'], innerText: primary}));
-	} else if (primary) {
-		tags.append(primary);
-	}
-	for (let [k, v] of Object.entries(rest)) {
-		let tag = create('span', {className: 'tag'});
-		let value = create('span', {className: 'value'});
-		if (v instanceof HTMLElement) {
-			value = v;
-		} else if (v === SYMBOL_UNSET) {
-			value.classList.add('null');
-			value.innerText = '«null»';
-		} else {
-			value.innerText = v;
-		}
-		tag.append(create('span', {className: 'key', innerText: k}), value);
-		tags.append(tag);
-	}
-	row.append(tags);
-	output_div.append(row);
-	if (data) {
-		append_log_data(data, kind, tags);
-	}
-}
-function append_log_data(data, kind, tags) {
-	let size;
-	if (kind === 'hex') {
-		size = ethers.getBytes(data).length;
-	} else if (kind === 'text') {
-		size = ethers.toUtf8Bytes(data).length;
-	}
-	if (tags && Number.isInteger(size)) {
-		tags.append(create('span', {className: ['tag', 'size'], innerHTML: `${size} bytes`}));
-	}
-	if (kind === 'json' && typeof data !== 'string') {
-		data = JSON.stringify(data, (_, x) => {
-			if (typeof x === 'bigint') {
-				return ethers.toBeHex(x);
-			} else if (x instanceof Uint8Array) {
-				return ethers.hexlify(x);
-			}
-			return x;
-		}, '    ');
-	}
-	if (tags) {
-		tags.append(create_copy_btn(data));
-	}
-	let pre = create('pre', {innerText: data});
-	if (size >= 1000) pre.classList.add('clipped');
-	output_div.append(pre);
-}
-
 async function try_call() {
 	start_time = Date.now();
 	aborter = new AbortController();
@@ -948,49 +900,81 @@ async function try_call() {
 			options.headers = {'content-type': 'application/json'};
 			options.body = JSON.stringify({sender, data: request});
 		}
-		append_log('Client Request', {data: url, kind: 'text', Method: options.method});
-		append_log('Request Data', {data: request, Sender: sender});
+		let row0 = create_log({title: '⬆️ Client Request'});
+		add_tag(row0, create_tag('HTTP Method', options.method, 'http'));
+		output_div.append(row0);
+		if (post) {
+			add_tag(row0, create_tag('URL', url));
+			output_div.append(create_pre(options.body, false, row0));
+		} else {
+			output_div.append(create_pre(url, false, row0));
+		}
+		
+		let row1 = create_log({title: 'Request Data'});
+		add_tag(row1, create_tag('Sender', sender, 'code'));
+		output_div.append(row1, create_pre(request, true, row1));
+
 		let res = await fetch(url, options);
 		let text = await res.text();
-		append_log('Server Response', {
-			cls: res.ok ? 'success' : 'error', 
-			'HTTP Status': res.status, 
-			'Content Type': res.headers['content-type'] || SYMBOL_UNSET,
-			data: text, 
-			kind: 'text'
-		});
+
+		let row2 = create_log({title: '⬇️ Server Response'});
+		row2.classList.add(res.ok ? 'success' : 'error');
+		add_tag(row2, create_tag('HTTP Status', res.status, 'http'));
+		add_tag(row2, create_tag('Content Type', res.headers.get('content-type')));
+		output_div.append(row2, create_pre(text, false, row2));
+
 		let json = JSON.parse(text);
 		let {data: response, message, ...rest} = json;
+		//rest.a = 'a';
 		let unknown = Object.keys(rest);
 		if (unknown.length) {
-			append_log(null, {Warning: 'Unexpected Response Keys', Keys: unknown.join(', ')});
+			let row = create_log({title: 'Unexpected Response Keys'});
+			row.classList.add('error');
+			add_tag(row, create_tag('Count', unknown.length));
+			output_div.append(row, create_pre(unknown.join(', '), false, row));
 		}
 		if (res.ok) {
-			//append_log({[KEY_PRIMARY]: `"data"`, data: response});
 			if (proto_select.value === 'tor') {
 				let [sig, exp, signed_data] = ethers.AbiCoder.defaultAbiCoder().decode(['bytes', 'uint64', 'bytes'], response);
-				let hash = ethers.solidityPackedKeccak256(['address', 'uint64', 'bytes', 'bytes'], [sender, exp, request, signed_data]);
-				append_log('TOR Protocol', {
-					Hash: hash,
-					Expires: format_exp(exp),
-					Signature: sig
-				});
+				let hash = ethers.solidityPackedKeccak256(
+					['address', 'uint64', 'bytes', 'bytes'],
+					[sender, exp, request, signed_data]
+				);
+				
+				let row_proto = create_log({title: 'TOR Protocol'});
+				add_tag(row_proto, create_exp(exp));
+				add_tag(row_proto, create_tag('Hash', hash, 'code'));
+				add_tag(row_proto, create_tag('Signature', sig, 'code'));
+				output_div.append(row_proto);
+
 				let signed = ethers.verifyMessage(hash, sig);
-				append_log('Signed Response Data', {data: signed_data, 'Signed by': signed});
+				let row_signed = create_log({title: 'Signed Response Data'});
+				add_tag(row_signed, create_tag('Signed by', signed, 'code'));
+				output_div.append(row_signed, create_pre(signed_data, true, row_signed));
+				
 				response = signed_data;
 			} else if (proto_select.value === 'ens') {
 				let [signed_data, exp, sig] = ethers.AbiCoder.defaultAbiCoder().decode(['bytes', 'uint64', 'bytes'], response);
-				let hash = ethers.solidityPackedKeccak256(['bytes', 'address', 'uint64', 'bytes', 'bytes'], ['0x1900', sender, exp, request, signed_data]);
-				append_log('ENS Protocol', {
-					Hash: hash,
-					Expires: format_exp(exp),
-					Signature: sig
-				});
+				let hash = ethers.solidityPackedKeccak256(
+					['bytes', 'address', 'uint64', 'bytes', 'bytes'], 
+					['0x1900', sender, exp, request, signed_data]
+				);
+				
+				let row_proto = create_log({title: 'ENS Protocol'});
+				add_tag(row_proto, create_exp(exp));
+				add_tag(row_proto, create_tag('Hash', hash, 'code'));
+				add_tag(row_proto, create_tag('Signature', sig, 'code'));
+				output_div.append(row_proto);
+
 				let signed = ethers.verifyMessage(hash, sig);
-				append_log('Signed Response Data', {data: signed_data, 'Signed by': signed});
+				let row_signed = create_log({title: 'Signed Response Data'});
+				add_tag(row_signed, create_tag('By', signed, 'code'));
+				output_div.append(row_signed, create_pre(signed_data, true, row_signed));
+				
 				response = signed_data;
 			} else {
-				append_log('Response Data', {data: response});
+				let row = create_log({title: 'Unsigned Response Data'});
+				output_div.append(row, create_pre(response, true, row));
 			}
 
 			if (func_select.value === 'ensip10') {
@@ -1012,39 +996,52 @@ async function try_call() {
 				}
 				calls.forEach((call, i) => {
 					let {name, args: [_, arg]} = ENSIP10_ABI.parseTransaction({data: call});
-					append_log(create('span', {className: ['tag', 'secondary'], innerHTML: `${name}(${arg ?? ''})`}), {
-						time: `#${i+1}`,
-						//Call: ENSIP10_ABI.parseTransaction({data: call}).signature,
-						Request: create_copy_btn(call), 
-						Response: create_copy_btn(answers[i])
-					});
+					let row = create_log({time: `#${i+1}`});
+					add_tag(row, create('span', {className: ['tag', 'record'], innerHTML: `${name}(${arg ?? ''})`}));
+					add_tag(row, create_tag('Request', create_copy_btn(call)));
+					add_tag(row, create_tag('Response', create_copy_btn(answers[i])));
+					output_div.append(row);
 				});
+
 				let record = new Record();
 				record.parseCalls(calls, answers);
-				append_log('Record', {data: record.toObject(), Fields: record.size, kind: 'json'});
-				//append_log_data(record.toJSON(), 'json');
+				let row = create_log({title: 'Record'});
+				add_tag(row, create_tag('Count', record.size));
+				add_tag(row, create_copy_btn(JSON.stringify(record.toJSON())));
+				output_div.append(row, create_json(record.toObject()));
+
 			} else if (func_select.value === FUNC_ABI) {
 				try {
 					let res = abi.decodeFunctionResult(abi_func, response);
 					let m = abi_func.outputs.map((type, i) => {
 						return [type.name || `[${i}]`, res[i]];
 					});
-					// if (m.length === 1) {
-					// 	append_log({[KEY_PRIMARY]: 'ABI Decoded Response', data: m[0], kind: 'text'}); 
-					// } else {
-					append_log('ABI Decoded Response', {Outputs: res.length, data: Object.fromEntries(m), kind: 'json'});
+					let json = Object.fromEntries(m);
+					let row = create_log({title: 'ABI Decoded Response'});
+					add_tag(row, create_tag('Outputs', m.length));
+					add_tag(row, create_copy_btn(JSON.stringify(json)));
+					output_div.append(row, create_json(json));
 				} catch (err) {
-					append_log('ABI Decode Error', {cls: 'error', Error: err.message});
+					let row = create_log({title: 'ABI Decode Error'});
+					row.classList.add('error');
+					output_div.append(row, create_pre(err.message, false, row));
 				}
 			}
 		} else {
-			append_log('CCIP-Read Error', {cls: 'error', data: message, kind: 'text'});
+			let row = create_log({title: 'CCIP-Read Error'});
+			row.classList.add('error');
+			output_div.append(row, create_pre(message, false, row));
 		}
 	} catch (err) {
-		append_log('Unexpected Error', {cls: 'error', data: err.message, kind: 'text'});
 		console.log(err);
+		let row = create_log({title: 'Unexpected Error'});
+		row.classList.add('error');
+		output_div.append(row, create_pre(err.message, false, row));
 	}
-	append_log(null, {Duration: `${((Date.now() - start_time)/1000).toFixed(2)} sec`});
+	let row = create_log();
+	add_tag(row, create_tag('Duration', `${((Date.now() - start_time)/1000).toFixed(2)} sec`));
+	output_div.append(row);
+
 	main_spinner.classList.add('hide');
 	start_btn.classList.remove('hide');
 	stop_btn.classList.add('hide');
@@ -1144,8 +1141,77 @@ function parse_coin(s) {
 	}
 }
 
-function format_exp(exp) {
-	return `${new Date(Number(exp * 1000n)).toLocaleString()} (${exp})`;
+function create_exp(exp) {
+	let date = new Date(Number(exp * 1000n));
+	let now = Date.now();
+	let delta = date - now;
+	let tag;
+	if (delta >= 0) {
+		tag = create_tag('Expires in', format_dur(delta));
+	} else {
+		tag = create_tag('Expired at', date.toLocaleString());
+	}
+	tag.append(create_copy_btn(exp));
+	return tag;
+}
+
+function create_log({title, time = true} = {}) {
+	let row = create('div', {className: 'log'});
+	if (time === true) time =  `${Math.round(Date.now() - start_time)} ms`;
+	let tags = create('div', {className: 'tags'});
+	row.append(create('span', {className: 'time', innerHTML: time}), tags);
+	if (title) add_tag(row, create('span', {className: ['tag', 'primary'], innerHTML: title}));
+	return row;
+}
+function add_tag(row, tag) {
+	row.querySelector('.tags').append(tag);
+}
+function create_pre(data, hex, row) {
+	let bytes = hex ? ethers.getBytes(data) : ethers.toUtf8Bytes(data);
+	if (row) {
+		add_tag(row, create('span', {className: ['tag', 'size'], innerHTML: `${bytes.length} bytes`}));
+		add_tag(row, create_copy_btn(data));
+	}
+	let pre = create('pre', {innerText: data});
+	if (bytes.length >= 1000) pre.classList.add('clipped');
+	return pre;
+}
+function create_json(json) {
+	let text = JSON.stringify(json, (_, x) => {
+		if (typeof x === 'bigint') {
+			return ethers.toBeHex(x);
+		} else if (x instanceof Uint8Array) {
+			return ethers.hexlify(x);
+		}
+		return x;
+	}, '    ');
+	return create('pre', {innerText: text});
+}
+function create_tag(key, value, cls) {
+	let tag = create('span', {className: 'tag'});
+	if (cls) tag.classList.add(cls);
+	tag.append(create('span', {className: 'key', innerText: key}));
+	if (value instanceof HTMLElement) {
+		tag.append(value);
+	} else if (value === undefined) {
+		tag.append(create('span', {className: ['value', 'null'], innerText: '«null»'}));
+	} else {
+		tag.append(create('span', {className: ['value'], innerText: value}));
+	}
+	return tag;
+}
+
+function create_copy_btn(s) {
+	return create('button', {
+		className: 'copy', 
+		click() {
+			const cls = 'copied';
+			document.querySelectorAll(`.${cls}`).forEach(x => x.classList.remove(cls));
+			navigator.clipboard.writeText(s);
+			this.classList.add(cls);
+			setTimeout(() => this.classList.remove(cls), 2000);
+		}
+	});
 }
 
 function create(el, args, ...a) {
@@ -1173,23 +1239,42 @@ function create(el, args, ...a) {
 	el.append(...a);
 	return el;
 }
-function create_copy_btn(s) {
-	return create('button', {
-		className: 'copy', 
-		click() {
-			const cls = 'copied';
-			document.querySelectorAll(`.${cls}`).forEach(x => x.classList.remove(cls));
-			navigator.clipboard.writeText(s);
-			this.classList.add(cls);
-			setTimeout(() => this.classList.remove(cls), 2000);
-		}
-	});
-}
+
 function visit(href) {
 	create('a', {target: '_blank', href}).click();
 }
 function plural(n, word, s = 's') {
 	return n == 1 ? word : word + s;
+}
+function trim_trailing_decimal_zeros(s) {
+	return s.includes('.') ? s.replace(/\.?0*$/, '') : s;
+}
+function format_dur(t, n = 1) {
+	if (t < 500) return `${Math.ceil(t)}ms`;
+	t /= 1000;
+	let unit;
+	if (t < 60) {
+		unit = 's';
+	} else {
+		t /= 60;
+		if (t < 60) {
+			unit = 'm';
+		} else {
+			t /= 60;
+			if (t < 24) {
+				unit = 'ʜ';
+			} else {
+				t /= 24;
+				if (t < 365) {
+					unit = 'ᴅ';
+				} else {
+					t /= 365;
+					unit = 'ʏ';
+				}
+			}
+		}
+	}
+	return trim_trailing_decimal_zeros(t.toFixed(n)) + unit;
 }
 </script>
 </body>
