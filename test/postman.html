@@ -270,6 +270,7 @@ textarea {
 	border-radius: 4px;
 	border: 1px solid #ccc;
 	font: 14px monospace;
+	word-break: break-word;
 }
 #output .tag .copy {
 	width: 20px;
@@ -894,31 +895,37 @@ function append_log(primary, {cls, data, time = true, kind = 'hex', ...rest}) {
 	row.append(tags);
 	output_div.append(row);
 	if (data) {
-		let size;
-		if (kind === 'hex') {
-			size = ethers.getBytes(data).length;
-		} else if (kind === 'text') {
-			size = ethers.toUtf8Bytes(data).length;
-		}
-		if (Number.isInteger(size)) {
-			tags.append(create('span', {className: ['tag', 'size'], innerHTML: `${size} bytes`}));
-		}
-		if (kind === 'json' && typeof data !== 'string') {
-			data = JSON.stringify(data, (_, x) => {
-				if (typeof x === 'bigint') {
-					return ethers.toBeHex(x);
-				} else if (x instanceof Uint8Array) {
-					return ethers.hexlify(x);
-				}
-				return x;
-			}, '    ');
-		}
-		tags.append(create_copy_btn(data));
-		let pre = create('pre', {innerText: data});
-		if (size >= 1000) pre.classList.add('clipped');
-		output_div.append(pre);
+		append_log_data(data, kind, tags);
 	}
 }
+function append_log_data(data, kind, tags) {
+	let size;
+	if (kind === 'hex') {
+		size = ethers.getBytes(data).length;
+	} else if (kind === 'text') {
+		size = ethers.toUtf8Bytes(data).length;
+	}
+	if (tags && Number.isInteger(size)) {
+		tags.append(create('span', {className: ['tag', 'size'], innerHTML: `${size} bytes`}));
+	}
+	if (kind === 'json' && typeof data !== 'string') {
+		data = JSON.stringify(data, (_, x) => {
+			if (typeof x === 'bigint') {
+				return ethers.toBeHex(x);
+			} else if (x instanceof Uint8Array) {
+				return ethers.hexlify(x);
+			}
+			return x;
+		}, '    ');
+	}
+	if (tags) {
+		tags.append(create_copy_btn(data));
+	}
+	let pre = create('pre', {innerText: data});
+	if (size >= 1000) pre.classList.add('clipped');
+	output_div.append(pre);
+}
+
 async function try_call() {
 	start_time = Date.now();
 	aborter = new AbortController();
@@ -935,16 +942,14 @@ async function try_call() {
 			method: 'GET',
 			signal: aborter.signal,
 		};
-		if (url === endpoint) {
+		let post = url === endpoint;
+		if (post) {
 			options.method = 'POST';
 			options.headers = {'content-type': 'application/json'};
 			options.body = JSON.stringify({sender, data: request});
 		}
-		append_log('Request Data', {
-			data: request,
-			Method: options.method,
-			URL: url
-		});
+		append_log('Client Request', {data: url, kind: 'text', Method: options.method});
+		append_log('Request Data', {data: request, Sender: sender});
 		let res = await fetch(url, options);
 		let text = await res.text();
 		append_log('Server Response', {
@@ -965,24 +970,24 @@ async function try_call() {
 			if (proto_select.value === 'tor') {
 				let [sig, exp, signed_data] = ethers.AbiCoder.defaultAbiCoder().decode(['bytes', 'uint64', 'bytes'], response);
 				let hash = ethers.solidityPackedKeccak256(['address', 'uint64', 'bytes', 'bytes'], [sender, exp, request, signed_data]);
-				let signed = ethers.verifyMessage(hash, sig);
-				append_log('Signed Response Data', {
-					data: signed_data,
-					Protocol: 'TOR', 
-					Hash: hash, 
-					'Signed by': signed,
+				append_log('TOR Protocol', {
+					Hash: hash,
+					Expires: format_exp(exp),
+					Signature: sig
 				});
+				let signed = ethers.verifyMessage(hash, sig);
+				append_log('Signed Response Data', {data: signed_data, 'Signed by': signed});
 				response = signed_data;
 			} else if (proto_select.value === 'ens') {
 				let [signed_data, exp, sig] = ethers.AbiCoder.defaultAbiCoder().decode(['bytes', 'uint64', 'bytes'], response);
 				let hash = ethers.solidityPackedKeccak256(['bytes', 'address', 'uint64', 'bytes', 'bytes'], ['0x1900', sender, exp, request, signed_data]);
-				let signed = ethers.verifyMessage(hash, sig);
-				append_log('Signed Response Data', {
-					data: signed_data,
-					Protocol: 'ENS', 
+				append_log('ENS Protocol', {
 					Hash: hash,
-					'Signed by': signed
+					Expires: format_exp(exp),
+					Signature: sig
 				});
+				let signed = ethers.verifyMessage(hash, sig);
+				append_log('Signed Response Data', {data: signed_data, 'Signed by': signed});
 				response = signed_data;
 			} else {
 				append_log('Response Data', {data: response});
@@ -1017,6 +1022,7 @@ async function try_call() {
 				let record = new Record();
 				record.parseCalls(calls, answers);
 				append_log('Record', {data: record.toObject(), Fields: record.size, kind: 'json'});
+				//append_log_data(record.toJSON(), 'json');
 			} else if (func_select.value === FUNC_ABI) {
 				try {
 					let res = abi.decodeFunctionResult(abi_func, response);
@@ -1136,6 +1142,10 @@ function parse_coin(s) {
 	} else {
 		throw new Error('unknown coin format');
 	}
+}
+
+function format_exp(exp) {
+	return `${new Date(Number(exp * 1000n)).toLocaleString()} (${exp})`;
 }
 
 function create(el, args, ...a) {
