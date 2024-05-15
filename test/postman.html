@@ -569,8 +569,10 @@ data_btn.addEventListener('click', () => {
 	try {
 		start_time = Date.now();
 		let row = create_log({title: 'Calldata'});
-		add_tag(row, create_tag('Signature', abi_func.format(), 'code'));
-		add_tag(row, create_tag('Inputs', abi_func.inputs.length));
+		if (func_select.value === FUNC_ABI) {
+			add_tag(row, create_tag('Signature', abi_func.format(), 'code'));
+			add_tag(row, create_tag('Inputs', abi_func.inputs.length));
+		}
 		output_div.replaceChildren(row, create_pre(make_calldata(), true, row));
 	} catch (err) {
 		console.log(err);
