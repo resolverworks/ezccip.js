@@ -70,6 +70,9 @@ button.copy.copied {
 #add_field_btn {
 	background-color: #efe;
 }
+#delete_fields_btn {
+	align-self: stretch;
+}
 .delete_btn {
 	background-color: #fee;
 }
@@ -286,9 +289,12 @@ textarea {
 	background-color: #ffc;
 }
 #output .tag.record {
-	background-color: #cff;
-	font-size: 12px;
+	border: none;
+	background-color: #c4c4;
+	font: 11px monospace;
 }
+#output .record[data-name="text"] { background-color: #66f4; }
+#output .record[data-name="addr"] { background-color: #0a84; }
 #output .tag .copy {
 	width: 20px;
 	height: 20px;
@@ -355,7 +361,15 @@ footer {
 	<button data-prefix="Demo" data-config='{
 		"endpoint":"https://raffy.xyz/ezccip/",
 		"name":"raffy.eth",
-		"fields":[{"type":"text", "arg": "description"}, {"type": "addr", "arg": "$eth"}]
+		"fields":[
+			{"type":"text", "arg": "name"},
+			{"type":"text", "arg": "notice"},
+			{"type":"text", "arg": "description"},
+			{"type": "addr", "arg": "$eth"},
+			{"type": "addr", "arg": "$doge"},
+			{"type":"pubkey"},
+			{"type":"chash"}
+		]
 	}'>ENSIP-10</button>
 	<button data-config='{
 		"endpoint": "https://raffy.xyz/ezccip/",
@@ -425,11 +439,13 @@ footer {
 		<div id="mod_fields" class="row">
 			<button id="add_field_btn" title="[ALT] Add Default Profile">✏️ Add Field</button>
 			<span id="field_count_lbl">0 fields</span>
-			<select id="multi_select" class="hide">
+			<button id="delete_fields_btn" class="hide delete_btn">
+				<svg height="16" stroke-linejoin="round" style="color: currentcolor;" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.75 2.75C6.75 2.05964 7.30964 1.5 8 1.5C8.69036 1.5 9.25 2.05964 9.25 2.75V3H6.75V2.75ZM5.25 3V2.75C5.25 1.23122 6.48122 0 8 0C9.51878 0 10.75 1.23122 10.75 2.75V3H12.9201H14.25H15V4.5H14.25H13.8846L13.1776 13.6917C13.0774 14.9942 11.9913 16 10.6849 16H5.31508C4.00874 16 2.92263 14.9942 2.82244 13.6917L2.11538 4.5H1.75H1V3H1.75H3.07988H5.25ZM4.31802 13.5767L3.61982 4.5H12.3802L11.682 13.5767C11.6419 14.0977 11.2075 14.5 10.6849 14.5H5.31508C4.79254 14.5 4.3581 14.0977 4.31802 13.5767Z" fill="currentColor"></path></svg>
+				Remove All</button>
+			<select id="multi_select" class="hide" style="margin-left: auto">
 				<option value="inner">resolve(name, multicall([...]))</option>
 				<option value="outer">multicall([resolve(name, ...), ...])</option>
 			</select>
-			<button id="clear_fields_btn" class="hide" style="margin-left: auto">🧹️ Remove All</button>
 		</div>
 	</div>
 	<div id="abi" class="rows hide">
@@ -492,6 +508,10 @@ const SYMBOL_UNSET = Symbol('unset');
 const KEY_PRIMARY = '__PRIMARY';
 
 const SUGGESTED_KEYS = [...Profile.ENS().texts];
+const SUGGESTED_COINS = [...Coin].filter(x => !x.unnamed && !x.legacy).sort((a, b) => {
+	let c = a.type - b.type;
+	return c > 0 ? 1 : c < 0 ? -1 : 0;
+});
 
 const ENSIP10_ABI = new ethers.Interface([
 	'function multicall(bytes[] calls) external view returns (bytes[])',
@@ -529,11 +549,10 @@ const calldata_btn = document.querySelector('#calldata_btn');
 const calldata_status = document.querySelector('#calldata_status');
 const main_spinner = document.querySelector('#actions .spinner');
 const add_field_btn = document.querySelector('#add_field_btn');
-const clear_fields_btn = document.querySelector('#clear_fields_btn');
+const delete_fields_btn = document.querySelector('#delete_fields_btn');
 const field_count_lbl = document.querySelector('#field_count_lbl');
 const multi_select = document.querySelector('#multi_select');
 const proto_select = document.querySelector('#proto_select');
-//const signer_field = document.querySelector('#signer_field');
 const output_div = document.querySelector('#output');
 
 let start_time;
@@ -555,7 +574,7 @@ calldata_ta.addEventListener('input', update_ux);
 calldata_btn.addEventListener('click', () => visit(`https://www.4byte.directory/signatures/?bytes4_signature=${calldata_ta.value.trim().slice(0, 10)}`));
 proto_select.addEventListener('input', update_ux);
 endpoint_btn.addEventListener('click', () => visit(endpoint));
-clear_fields_btn.addEventListener('click', () => {
+delete_fields_btn.addEventListener('click', () => {
 	delete_fields();
 	update_ux();
 });
@@ -573,7 +592,7 @@ data_btn.addEventListener('click', () => {
 			add_tag(row, create_tag('Signature', abi_func.format(), 'code'));
 			add_tag(row, create_tag('Inputs', abi_func.inputs.length));
 		}
-		output_div.replaceChildren(row, create_pre(make_calldata(), true, row));
+		output_div.replaceChildren(row, create_pre(make_calldata(), true, row, Infinity));
 	} catch (err) {
 		console.log(err);
 		output_div.replaceChildren(create('div', {className: ['log', 'error'], innerHTML: err.message}));
@@ -598,6 +617,14 @@ copy_link_btn.addEventListener('click', () => {
 	url.hash = btoa(localStorage[STORAGE_KEY]).replace(/=+$/, '');
 	navigator.clipboard.writeText(url);
 });
+for (let f of [endpoint_field, sender_field, name_field]) {
+	f.addEventListener('keydown', e => {
+		if (e.key === 'Enter') {
+			start_btn.click();
+			stop_btn.click();
+		}
+	});
+}
 window.addEventListener('hashchange', process_hash);
 
 for (let btn of document.querySelectorAll('#examples button')) {
@@ -778,7 +805,6 @@ function parse_as_json(input, type, test) {
 	throw new Error(`expected ${type}: "${input}"`);
 }
 
-
 function update_ux() {
 
 	const func = func_select.value;
@@ -808,7 +834,7 @@ function update_ux() {
 	} else {
 		let fields = get_fields().map(parse_field);
 		field_count_lbl.innerHTML = `${fields.length} ${plural(fields.length, 'field')}`;
-		clear_fields_btn.classList.toggle('hide', fields.length < 2);
+		delete_fields_btn.classList.toggle('hide', fields.length < 2);
 		multi_select.classList.toggle('hide', fields.length < 2);
 		if (!fields.length) ok = false;
 		parse_name();
@@ -831,7 +857,9 @@ function update_ux() {
 		...config
 	});
 
-	output_div.innerHTML = '';
+	if (!aborter) {
+		output_div.innerHTML = '';
+	}
 }
 
 function make_calldata() {
@@ -852,6 +880,10 @@ function make_calldata() {
 				}
 				case TYPE_PUBKEY: {
 					profile.pubkey = true;
+					break;
+				}
+				case TYPE_NAME: {
+					profile.name = true;
 					break;
 				}
 				case TYPE_TEXT: {
@@ -886,6 +918,7 @@ async function try_call() {
 	output_div.innerHTML = '';
 	main_spinner.classList.remove('hide');
 	start_btn.classList.add('hide');
+	data_btn.classList.add('hide');
 	stop_btn.disabled = false;
 	stop_btn.classList.remove('hide');
 	//let signer = signer_field.value.trim();
@@ -997,9 +1030,9 @@ async function try_call() {
 					[answers] = ENSIP10_ABI.decodeFunctionResult(multicall, response);
 				}
 				calls.forEach((call, i) => {
-					let {name, args: [_, arg]} = ENSIP10_ABI.parseTransaction({data: call});
+					let {name, args: [_, arg], selector} = ENSIP10_ABI.parseTransaction({data: call});
 					let row = create_log({time: `#${i+1}`});
-					add_tag(row, create('span', {className: ['tag', 'record'], innerHTML: `${name}(${arg ?? ''})`}));
+					add_tag(row, create('span', {className: ['tag', 'record'], dataset: {name}, innerHTML: `${name}(${arg ?? ''})`}));
 					add_tag(row, create_tag('Request', create_copy_btn(call)));
 					add_tag(row, create_tag('Response', create_copy_btn(answers[i])));
 					output_div.append(row);
@@ -1010,7 +1043,7 @@ async function try_call() {
 				let row = create_log({title: 'Record'});
 				add_tag(row, create_tag('Count', `${record.size}/${calls.length}`));
 				add_tag(row, create_copy_btn(JSON.stringify(record.toJSON())));
-				output_div.append(row, create_json(record.toObject()));
+				output_div.append(row, create_pre_json(record.toObject()));
 
 			} else if (func_select.value === FUNC_ABI) {
 				try {
@@ -1021,8 +1054,8 @@ async function try_call() {
 					let json = Object.fromEntries(m);
 					let row = create_log({title: 'ABI Decoded Response'});
 					add_tag(row, create_tag('Outputs', m.length));
-					add_tag(row, create_copy_btn(JSON.stringify(json)));
-					output_div.append(row, create_json(json));
+					add_tag(row, create_copy_btn(JSON.stringify(json, ext_stringify)));
+					output_div.append(row, create_pre_json(json));
 				} catch (err) {
 					let row = create_log({title: 'ABI Decode Error'});
 					row.classList.add('error');
@@ -1046,7 +1079,9 @@ async function try_call() {
 
 	main_spinner.classList.add('hide');
 	start_btn.classList.remove('hide');
+	data_btn.classList.remove('hide');
 	stop_btn.classList.add('hide');
+	aborter = null;
 }
 
 function delete_fields() {
@@ -1064,16 +1099,34 @@ function add_field({type, arg} = {}) {
 	type_select.append(create('option', {value: TYPE_CHASH}, 'contenthash()'));
 	type_select.append(create('option', {value: TYPE_PUBKEY}, 'pubkey()'));
 	type_select.append(create('option', {value: TYPE_NAME}, 'name()'));
-	//let suggest_select = create('select', {className: 'suggest_select'});
 	let arg_field = create('input', {className: 'arg_field'});
 	let delete_btn = create('button', {
-		innerHTML: '<svg height="16" stroke-linejoin="round" style="color: currentcolor;" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.75 2.75C6.75 2.05964 7.30964 1.5 8 1.5C8.69036 1.5 9.25 2.05964 9.25 2.75V3H6.75V2.75ZM5.25 3V2.75C5.25 1.23122 6.48122 0 8 0C9.51878 0 10.75 1.23122 10.75 2.75V3H12.9201H14.25H15V4.5H14.25H13.8846L13.1776 13.6917C13.0774 14.9942 11.9913 16 10.6849 16H5.31508C4.00874 16 2.92263 14.9942 2.82244 13.6917L2.11538 4.5H1.75H1V3H1.75H3.07988H5.25ZM4.31802 13.5767L3.61982 4.5H12.3802L11.682 13.5767C11.6419 14.0977 11.2075 14.5 10.6849 14.5H5.31508C4.79254 14.5 4.3581 14.0977 4.31802 13.5767Z" fill="currentColor"></path></svg>',
 		className: ['delete_btn', 'icon'],
 		click() {
 			row.remove();
 			update_ux();
 		}
-	});
+	}, delete_fields_btn.querySelector('svg').cloneNode(true));
+	let addr_select = create('select', {
+		className: 'suggest_select',
+		input() {
+			arg_field.value = this.value;
+			this.selectedIndex = -1;
+			update_ux();
+		}	
+	}, SUGGESTED_COINS.map(x => {
+		let {name, title, chain, type} = x;
+		let desc = chain ? `Chain: ${chain}` : `Type: ${type}`;
+		return create('option', {value: `$${name}`}, `[${name}] ${title} (${desc})`);
+	}));
+	let text_select = create('select', {
+		className: 'suggest_select',
+		input() {
+			arg_field.value = this.value;
+			this.selectedIndex = -1;
+			update_ux();
+		}	
+	}, SUGGESTED_KEYS.map(x => create('option', null, x)));
 	type_select.addEventListener('input', () => {
 		arg_field.value = '';
 		update_ux();
@@ -1086,32 +1139,24 @@ function add_field({type, arg} = {}) {
 	// });
 	if (type) type_select.value = type;
 	if (arg) arg_field.value = arg;
-	row.append(delete_btn, type_select, arg_field); //, suggest_select);
+	row.append(delete_btn, type_select, addr_select, text_select, arg_field);
 	ensip10_div.append(row);
 	Object.assign(row, {
 		arg_field,
 		type_select,
-		//suggest_select
+		text_select,
+		addr_select,
 	});
 }
 
 function parse_field(f) {
-	const {type_select: {value: type}, arg_field} = f;
-	//uggest_select.classList.add('hide');
-	switch (type) {
-		case TYPE_CHASH:
-		case TYPE_PUBKEY:
-		case TYPE_NAME:
-			arg_field.classList.add('invis');
-			return {type};
-	}
-	arg_field.classList.remove('invis');
+	const {type_select: {value: type}, arg_field, addr_select, text_select} = f;
+	arg_field.classList.toggle('invis', type !== TYPE_TEXT && type !== TYPE_ADDR);
+	text_select.classList.toggle('hide', type !== TYPE_TEXT);
+	addr_select.classList.toggle('hide', type !== TYPE_ADDR);
 	let arg = arg_field.value.trim();
 	if (type === TYPE_TEXT) {
 		arg_field.placeholder = 'key';
-		// suggest_select.replaceChildren(...Array.from(SUGGESTED_KEYS, x => create('option', null, x)));
-		// suggest_select.selectedIndex = -1; 
-		// suggest_select.classList.remove('hide');
 		if (!arg) return {type, error: true};
 		if (arg.startsWith('"') && arg.endsWith('"')) { // unwrap quoted
 			try {
@@ -1119,16 +1164,17 @@ function parse_field(f) {
 			} catch (err) {
 			}
 		}
-	} else {
-		arg_field.placeholder = 'coinType • $abbr • <empty>';
-		//suggest_select.replaceChildren(...Array.from(Coin, x => create('option', {value: `$${x.name}`}, x.title)));
+		return {type, arg};
+	} else if (type === TYPE_ADDR) {
+		arg_field.placeholder = 'coinType • $abbr • <empty>';		
 		try {
 			parse_coin(arg);
+			return {type, arg};
 		} catch (err) {
 			return {type, error: true};
 		}
 	}
-	return {type, arg};
+	return {type};
 }
 
 function parse_coin(s) {
@@ -1168,26 +1214,28 @@ function create_log({title, time = true} = {}) {
 function add_tag(row, tag) {
 	row.querySelector('.tags').append(tag);
 }
-function create_pre(data, hex, row) {
+function create_pre(data, hex, row, max = 1000) {
 	let bytes = hex ? ethers.getBytes(data) : ethers.toUtf8Bytes(data);
 	if (row) {
 		add_tag(row, create('span', {className: ['tag', 'size'], innerHTML: `${bytes.length} bytes`}));
 		add_tag(row, create_copy_btn(data));
 	}
 	let pre = create('pre', {innerText: data});
-	if (bytes.length >= 1000) pre.classList.add('clipped');
+	if (bytes.length >= max) pre.classList.add('clipped');
 	return pre;
 }
-function create_json(json) {
-	let text = JSON.stringify(json, (_, x) => {
-		if (typeof x === 'bigint') {
-			return ethers.toBeHex(x);
-		} else if (x instanceof Uint8Array) {
-			return ethers.hexlify(x);
-		}
-		return x;
-	}, '    ');
+function create_pre_json(json) {
+	let text = JSON.stringify(json, ext_stringify, '    ');
 	return create('pre', {innerText: text});
+}
+function ext_stringify(_, x) {
+	if (typeof x === 'bigint') {
+		let i = Number(x);
+		return Number.isSafeInteger(i) ? i : ethers.toBeHex(x);
+	} else if (x instanceof Uint8Array) {
+		return ethers.hexlify(x);
+	}
+	return x;
 }
 function create_tag(key, value, cls) {
 	let tag = create('span', {className: 'tag'});
@@ -1238,7 +1286,7 @@ function create(el, args, ...a) {
 			}
 		}
 	}
-	el.append(...a);
+	el.append(...a.flat(Infinity));
 	return el;
 }
 
