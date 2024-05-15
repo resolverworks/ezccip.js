@@ -970,7 +970,7 @@ async function try_call() {
 
 				let signed = ethers.verifyMessage(hash, sig);
 				let row_signed = create_log({title: 'Signed Response Data'});
-				add_tag(row_signed, create_tag('By', signed, 'code'));
+				add_tag(row_signed, create_tag('Signed by', signed, 'code'));
 				output_div.append(row_signed, create_pre(signed_data, true, row_signed));
 				
 				response = signed_data;
@@ -1008,7 +1008,7 @@ async function try_call() {
 				let record = new Record();
 				record.parseCalls(calls, answers);
 				let row = create_log({title: 'Record'});
-				add_tag(row, create_tag('Count', record.size));
+				add_tag(row, create_tag('Count', `${record.size}/${calls.length}`));
 				add_tag(row, create_copy_btn(JSON.stringify(record.toJSON())));
 				output_div.append(row, create_json(record.toObject()));
 
