@@ -679,6 +679,7 @@ function config_from_params(params) {
 				v = v.slice(pos + 1);
 			} else {
 				k = v;
+				v = '';
 			}
 			switch (k) {
 				case TYPE_TEXT:
@@ -693,7 +694,7 @@ function config_from_params(params) {
 				default:
 					break;
 			}
-		} else if (k === 'args') {
+		} else if (k === 'arg') {
 			if (!json.args) json.args = [];
 			json.args.push(v);
 		} else {
@@ -706,7 +707,7 @@ function params_from_config(json) {
 	let params = new URLSearchParams();
 	for (let [k, v] of Object.entries(json)) {
 		if (k === 'fields') {
-			v.forEach(({type, arg}) => params.append('field', type_has_arg(arg) ? `${type}-${arg}` : type));
+			v.forEach(({type, arg}) => params.append('field', type_has_arg(type) ? `${type}-${arg}` : type));
 		} else if (k === 'args') {
 			v.forEach(x => params.append('arg', x));
 		} else {
@@ -781,15 +782,16 @@ function parse_sender() {
 	}
 }
 function parse_calldata() {
+	calldata_btn.disabled = true;
 	try {
 		let hex = calldata_ta.value.trim();
 		if (!/^(0x)[0-9a-f]*$/i.test(hex)) throw new Error('expected 0x-prefixed hex string');
 		if (hex.length < 10) throw new Error('expected bytes4 selector');
 		calldata_btn.disabled = false;
+		if ((hex.length - 10) % 64) throw new Error('expected 32-byte padding');
 		calldata_status.innerHTML = '';
 		return hex;
 	} catch (err) {
-		calldata_btn.disabled = true;
 		calldata_status.innerHTML = err.message;
 	}
 }
