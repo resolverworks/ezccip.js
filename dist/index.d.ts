@@ -28,6 +28,7 @@ type CallContext = {
 	sender: HexString;
 	calldata: HexString;
 	protocol: SigningProtocol;
+	resolver: HexString;
 	history: History;
 } & CallContextExtra;
 type CCIPReadFunction = (args: Result, context: CallContext, history: History) => Promise<HexString | any[] | undefined>; 
@@ -35,7 +36,7 @@ type ENSIP10Function = (name: string, context: CallContext) => Promise<Record | 
 type EZCCIPConfig = {
 	protocol?: SigningProtocol;
 	resolver?: HexString;
-	signingKey?: SigningKey;
+	signingKey?: SigningKey | HexString;
 	ttlSec?: number;
 	recursionLimit?: number;
 } & CallContextExtra;

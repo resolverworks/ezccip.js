@@ -361,6 +361,7 @@ footer {
 	<button data-prefix="Demo" data-config='{
 		"endpoint":"https://raffy.xyz/ezccip/",
 		"name":"raffy.eth",
+		"sender": "0x828ec5bDe537B8673AF98D77bCB275ae1CA26D1f",
 		"fields":[
 			{"type":"text", "arg": "name"},
 			{"type":"text", "arg": "notice"},
@@ -371,6 +372,16 @@ footer {
 			{"type":"chash"}
 		]
 	}'>ENSIP-10</button>
+	<button data-config='{
+		"endpoint":"https://raffy.xyz/ezccip/ens",
+		"sender": "0x3CA097Edd180Ea2C2436BD30c021Ca20869087a0",
+		"proto": "ens",
+		"name":"raffy.eth",
+		"fields":[
+			{"type":"text", "arg": "description"},
+			{"type": "addr", "arg": "$eth"}
+		]
+	}'>DNSTORWithENSProtocol</button>
 	<button data-config='{
 		"endpoint": "https://raffy.xyz/ezccip/",
 		"abi": "function example(uint256 a, uint256 b) returns (uint256 c)",
@@ -569,6 +580,7 @@ func_select.addEventListener('input', () => {
 	focus_func();
 	update_ux();
 });
+multi_select.addEventListener('input', update_ux);
 abi_ta.addEventListener('input', update_ux);
 calldata_ta.addEventListener('input', update_ux);
 calldata_btn.addEventListener('click', () => visit(`https://www.4byte.directory/signatures/?bytes4_signature=${calldata_ta.value.trim().slice(0, 10)}`));
@@ -613,9 +625,10 @@ add_field_btn.addEventListener('click', e => {
 	update_ux(); 
 });
 copy_link_btn.addEventListener('click', () => {
-	let url = new URL(window.location.href);
-	url.hash = btoa(localStorage[STORAGE_KEY]).replace(/=+$/, '');
-	navigator.clipboard.writeText(url);
+	//let url = new URL(window.location.href);
+	//url.hash = btoa(localStorage[STORAGE_KEY]).replace(/=+$/, '');
+	//navigator.clipboard.writeText(url);
+	navigator.clipboard.writeText(window.location.href);
 });
 for (let f of [endpoint_field, sender_field, name_field]) {
 	f.addEventListener('keydown', e => {
@@ -633,7 +646,8 @@ for (let btn of document.querySelectorAll('#examples button')) {
 
 if (!process_hash()) {
 	try {
-		load_config(JSON.parse(localStorage[STORAGE_KEY]));
+		//load_config(JSON.parse(localStorage[STORAGE_KEY]));
+		load_config(localStorage[STORAGE_KEY]);
 	} catch (err) {
 		update_ux();
 	}
@@ -641,10 +655,11 @@ if (!process_hash()) {
 
 function process_hash() {
 	let hash = window.location.hash.slice(1);
-	history.replaceState(null, null, ' ');
+	//history.replaceState(null, null, ' ');
 	if (hash) {
 		try {
-			load_config(JSON.parse(atob(hash)));
+			load_config(config_from_params(new URLSearchParams(hash)));
+			//load_config(JSON.parse(atob(hash)));
 			update_ux();
 			return true;
 		} catch (err) {
@@ -652,6 +667,55 @@ function process_hash() {
 		}
 	}
 }
+
+function config_from_params(params) {
+	let json = {};
+	for (let [k, v] of params) {
+		if (k === 'field') {
+			if (!json.fields) json.fields = [];
+			let pos = v.indexOf('-');
+			if (pos >= 0) {
+				k = v.slice(0, pos);
+				v = v.slice(pos + 1);
+			} else {
+				k = v;
+			}
+			switch (k) {
+				case TYPE_TEXT:
+				case TYPE_ADDR:
+					json.fields.push({type: k, arg: v});
+					break;
+				case TYPE_CHASH:
+				case TYPE_PUBKEY:
+				case TYPE_NAME:
+					json.fields.push({type: k});
+					break;
+				default:
+					break;
+			}
+		} else if (k === 'args') {
+			if (!json.args) json.args = [];
+			json.args.push(v);
+		} else {
+			json[k] = v;
+		}
+	}
+	return json;
+}
+function params_from_config(json) {
+	let params = new URLSearchParams();
+	for (let [k, v] of Object.entries(json)) {
+		if (k === 'fields') {
+			v.forEach(({type, arg}) => params.append('field', type_has_arg(arg) ? `${type}-${arg}` : type));
+		} else if (k === 'args') {
+			v.forEach(x => params.append('arg', x));
+		} else {
+			params.append(k, v);
+		}
+	}
+	return params;
+}
+
 function load_config(json) {
 	endpoint_field.value = json.endpoint || '';
 	sender_field.value = json.sender || '';
@@ -733,14 +797,15 @@ function parse_abi() {
 	try {
 		abi = new ethers.Interface(abi_ta.value.split('\n').map(s => s.trim()).filter(x => x));
 		let funcs = abi.fragments.filter(f => ethers.Fragment.isFunction(f));
-		if (!funcs.length)
+		if (!funcs.length) throw new Error('expected function');
 		if (funcs.length != 1) throw new Error('expected one function');
 		abi_func = funcs[0];
-		abi_span.innerHTML = abi_func.selector;
-		abi_status.innerHTML = '';
+		abi_span.innerText = abi_func.selector;
+		abi_status.innerText = '';
 	} catch (err) {
 		abi = undefined;
 		abi_func = undefined;
+		abi_span.innerText = '';
 		abi_status.innerText = err.shortMessage || err.message;
 		abi_fields.forEach(x => x.classList.add('hide'));
 		return;
@@ -812,25 +877,39 @@ function update_ux() {
 	abi_div.classList.toggle('hide',      func !== FUNC_ABI);
 	calldata_div.classList.toggle('hide', func !== FUNC_CALLDATA);
 	
-	let config;
 	let ok = true;
 	parse_endpoint();
 	if (!endpoint) ok = false;
 	parse_sender();
 	if (!sender) ok = false;
 	
+	let json = {
+		endpoint: endpoint_field.value,
+		sender: sender_field.value,
+		proto: proto_select.value
+	};
+
+	// let params = new URLSearchParams();
+	// add_trimmed(params, 'endpoint', endpoint_field.value);
+	// add_trimmed(params, 'sender', sender_field.value);
+	// add_trimmed(params, 'proto', proto_select.value);
+
 	if (func === FUNC_ABI) {
 		parse_abi();
 		if (!abi) ok = false;
-		config = {
-			abi: abi_ta.value.trim(),
-			args: Array.from(abi_func.inputs, (_, i) => abi_fields[i].querySelector('input').value.trim()) 
-		};
+		//add_trimmed(params, 'abi', abi_ta.value);
+		json.abi = abi_ta.value;
+		if (abi_func) {
+			//abi_func?.inputs.forEach((_, i) => params.append('arg', abi_fields[i].querySelector('input').value));
+			json.args = Array.from(abi_func.inputs, (_, i) => abi_fields[i].querySelector('input').value.trim());	
+		}
 	} else if (func === FUNC_CALLDATA) {
 		if (!parse_calldata()) ok = false;
-		config = {
-			calldata: calldata_ta.value.trim()
-		};
+		//add_trimmed(params, 'calldata', calldata_ta.value);
+		json.calldata = calldata_ta.value;
+		// config = {
+		// 	calldata: calldata_ta.value.trim()
+		// };
 	} else {
 		let fields = get_fields().map(parse_field);
 		field_count_lbl.innerHTML = `${fields.length} ${plural(fields.length, 'field')}`;
@@ -838,28 +917,40 @@ function update_ux() {
 		multi_select.classList.toggle('hide', fields.length < 2);
 		if (!fields.length) ok = false;
 		parse_name();
+		//add_trimmed(params, 'name', name_field.value);
+		json.name = name_field.value;
 		resolve_btn.disabled = !name_norm;
 		if (fields.some(x => x.error)) ok = false;
-		config = {
-			name: name_field.value,
-			multi: multi_select.value,
-			fields
-		};
-	} 
+		if (fields.length >= 2) {
+			json.multi = multi_select.value;
+		}
+		json.fields = fields;
+		// for (let {type, arg} of fields) {
+		// 	params.append(type, arg ?? '');
+		// }
+		// config = {
+		// 	name: name_field.value,
+		// 	multi: multi_select.value,
+		// 	fields
+		// };
+	}
 
 	start_btn.disabled = !ok;
 	data_btn.disabled = !ok;
 
-	localStorage[STORAGE_KEY] = JSON.stringify({
-		endpoint: endpoint_field.value,
-		sender: sender_field.value,
-		proto: proto_select.value,
-		...config
-	});
+	localStorage[STORAGE_KEY] = JSON.stringify(json);
+
+	let query = params_from_config(json).toString();
+	history.replaceState(null, null, query ? '#' + query : ' ');
 
 	if (!aborter) {
 		output_div.innerHTML = '';
 	}
+}
+
+function add_trimmed(params, key, value) {
+	value = value?.trim();
+	if (value) params.append(key, value);
 }
 
 function make_calldata() {
@@ -945,8 +1036,10 @@ async function try_call() {
 			output_div.append(create_pre(url, false, row0));
 		}
 		
+		let request_hash = ethers.keccak256(request);
 		let row1 = create_log({title: 'Request Data'});
 		add_tag(row1, create_tag('Sender', sender, 'code'));
+		add_tag(row1, create_tag('Hash', request_hash, 'code'));
 		output_div.append(row1, create_pre(request, true, row1));
 
 		let res = await fetch(url, options);
@@ -970,10 +1063,11 @@ async function try_call() {
 		}
 		if (res.ok) {
 			if (proto_select.value === 'tor') {
-				let [sig, exp, signed_data] = ethers.AbiCoder.defaultAbiCoder().decode(['bytes', 'uint64', 'bytes'], response);
+				let [sig, exp, signed_response] = ethers.AbiCoder.defaultAbiCoder().decode(['bytes', 'uint64', 'bytes'], response);
+				let signed_response_hash = ethers.keccak256(signed_response);
 				let hash = ethers.solidityPackedKeccak256(
-					['address', 'uint64', 'bytes', 'bytes'],
-					[sender, exp, request, signed_data]
+					['address', 'uint64', 'bytes32', 'bytes32'],
+					[sender, exp, request_hash, signed_response_hash]
 				);
 				
 				let row_proto = create_log({title: 'TOR Protocol'});
@@ -982,17 +1076,19 @@ async function try_call() {
 				add_tag(row_proto, create_tag('Signature', sig, 'code'));
 				output_div.append(row_proto);
 
-				let signed = ethers.verifyMessage(hash, sig);
+				let signed = ethers.recoverAddress(hash, sig);
 				let row_signed = create_log({title: 'Signed Response Data'});
 				add_tag(row_signed, create_tag('Signed by', signed, 'code'));
-				output_div.append(row_signed, create_pre(signed_data, true, row_signed));
+				add_tag(row_signed, create_tag('Hash', signed_response_hash, 'code'));
+				output_div.append(row_signed, create_pre(signed_response, true, row_signed));
 				
-				response = signed_data;
+				response = signed_response;
 			} else if (proto_select.value === 'ens') {
-				let [signed_data, exp, sig] = ethers.AbiCoder.defaultAbiCoder().decode(['bytes', 'uint64', 'bytes'], response);
+				let [signed_response, exp, sig] = ethers.AbiCoder.defaultAbiCoder().decode(['bytes', 'uint64', 'bytes'], response);
+				let signed_response_hash = ethers.keccak256(signed_response);
 				let hash = ethers.solidityPackedKeccak256(
-					['bytes', 'address', 'uint64', 'bytes', 'bytes'], 
-					['0x1900', sender, exp, request, signed_data]
+					['bytes', 'address', 'uint64', 'bytes32', 'bytes32'], 
+					['0x1900', sender, exp, request_hash, signed_response_hash]
 				);
 				
 				let row_proto = create_log({title: 'ENS Protocol'});
@@ -1001,12 +1097,13 @@ async function try_call() {
 				add_tag(row_proto, create_tag('Signature', sig, 'code'));
 				output_div.append(row_proto);
 
-				let signed = ethers.verifyMessage(hash, sig);
+				let signed = ethers.recoverAddress(hash, sig);
 				let row_signed = create_log({title: 'Signed Response Data'});
 				add_tag(row_signed, create_tag('Signed by', signed, 'code'));
-				output_div.append(row_signed, create_pre(signed_data, true, row_signed));
+				add_tag(row_signed, create_tag('Hash', signed_response_hash, 'code'));
+				output_div.append(row_signed, create_pre(signed_response, true, row_signed));
 				
-				response = signed_data;
+				response = signed_response;
 			} else {
 				let row = create_log({title: 'Unsigned Response Data'});
 				output_div.append(row, create_pre(response, true, row));
@@ -1149,9 +1246,12 @@ function add_field({type, arg} = {}) {
 	});
 }
 
+function type_has_arg(type) {
+	return type === TYPE_TEXT || type === TYPE_ADDR;
+}
 function parse_field(f) {
 	const {type_select: {value: type}, arg_field, addr_select, text_select} = f;
-	arg_field.classList.toggle('invis', type !== TYPE_TEXT && type !== TYPE_ADDR);
+	arg_field.classList.toggle('invis', !type_has_arg(type));
 	text_select.classList.toggle('hide', type !== TYPE_TEXT);
 	addr_select.classList.toggle('hide', type !== TYPE_ADDR);
 	let arg = arg_field.value.trim();
@@ -1166,7 +1266,7 @@ function parse_field(f) {
 		}
 		return {type, arg};
 	} else if (type === TYPE_ADDR) {
-		arg_field.placeholder = 'coinType • $abbr • <empty>';		
+		arg_field.placeholder = 'coinType • $abbr • <empty>';
 		try {
 			parse_coin(arg);
 			return {type, arg};

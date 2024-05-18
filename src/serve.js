@@ -15,7 +15,10 @@ export function serve(ezccip, {port, resolvers, log = true, protocol = 'tor', si
 		log = undefined;
 	}
 	if (!signingKey) {
-		signingKey = new ethers.SigningKey(ethers.randomBytes(32));
+		signingKey = ethers.id('ezccip'); // 20240518: fixed instead of random key
+	}
+	if (!(signingKey instanceof ethers.SigningKey)) {
+		signingKey = new ethers.SigningKey(signingKey);
 	}
 	return new Promise(ful => {
 		let http = createServer(async (req, reply) => {
@@ -33,7 +36,7 @@ export function serve(ezccip, {port, resolvers, log = true, protocol = 'tor', si
 						let resolver = resolvers ? resolvers[key] : sender;
 						if (!resolver) throw error_with('unknown resolver', {status: 404, key});
 						let {data, history} = await ezccip.handleRead(sender, calldata, {protocol, signingKey, resolver, ip, ...a});
-						log?.(ip, url, history.toString(), (data.length-2)>>1);
+						log?.(ip, url, history.toString());
 						write_json(reply, {data});
 						break;
 					}

@@ -145,6 +145,7 @@ class EZCCIP {
 		if (!utils.isHexString(calldata) || calldata.length < 10) throw error_with('expected calldata', {status: 400});
 		context.sender = sender.toLowerCase();
 		context.calldata = calldata = calldata.toLowerCase();
+		context.resolver = resolver;
 		context.protocol = protocol; // allow the protocol be modified by the callback
 		let history = context.history = new History(recursionLimit);
 		let response = await this.handleCall(calldata, context, history);
@@ -234,7 +235,7 @@ async function processENSIP10(record, calldata, multicall = true, history) {
 			case 'addr(bytes32)': {
 				// https://eips.ethereum.org/EIPS/eip-137
 				let value = await record?.addr?.(60n);
-				res = [value ? utils.hexlify(value) : '0x'.padEnd(66, '0')]; // ethers bug, doesn't support Uint8Array as address
+				res = [value ? utils.hexlify(value) : '0x'.padEnd(42, '0')]; // ethers bug, doesn't support Uint8Array as address
 				break;
 			}
 			case 'addr(bytes32,uint256)': {
@@ -324,7 +325,10 @@ function serve(ezccip, {port, resolvers, log = true, protocol = 'tor', signingKe
 		log = undefined;
 	}
 	if (!signingKey) {
-		signingKey = new ethers.ethers.SigningKey(ethers.ethers.randomBytes(32));
+		signingKey = ethers.ethers.id('ezccip'); // 20240518: fixed instead of random key
+	}
+	if (!(signingKey instanceof ethers.ethers.SigningKey)) {
+		signingKey = new ethers.ethers.SigningKey(signingKey);
 	}
 	return new Promise(ful => {
 		let http = node_http.createServer(async (req, reply) => {
@@ -342,7 +346,7 @@ function serve(ezccip, {port, resolvers, log = true, protocol = 'tor', signingKe
 						let resolver = resolvers ? resolvers[key] : sender;
 						if (!resolver) throw error_with('unknown resolver', {status: 404, key});
 						let {data, history} = await ezccip.handleRead(sender, calldata, {protocol, signingKey, resolver, ip, ...a});
-						log?.(ip, url, history.toString(), (data.length-2)>>1);
+						log?.(ip, url, history.toString());
 						write_json(reply, {data});
 						break;
 					}

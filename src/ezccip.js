@@ -107,6 +107,7 @@ export class EZCCIP {
 		if (!isHexString(calldata) || calldata.length < 10) throw error_with('expected calldata', {status: 400});
 		context.sender = sender.toLowerCase();
 		context.calldata = calldata = calldata.toLowerCase();
+		context.resolver = resolver;
 		context.protocol = protocol; // allow the protocol be modified by the callback
 		let history = context.history = new History(recursionLimit);
 		let response = await this.handleCall(calldata, context, history);
@@ -196,7 +197,7 @@ export async function processENSIP10(record, calldata, multicall = true, history
 			case 'addr(bytes32)': {
 				// https://eips.ethereum.org/EIPS/eip-137
 				let value = await record?.addr?.(60n);
-				res = [value ? hexlify(value) : '0x'.padEnd(66, '0')]; // ethers bug, doesn't support Uint8Array as address
+				res = [value ? hexlify(value) : '0x'.padEnd(42, '0')]; // ethers bug, doesn't support Uint8Array as address
 				break;
 			}
 			case 'addr(bytes32,uint256)': {
