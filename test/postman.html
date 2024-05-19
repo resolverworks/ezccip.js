@@ -493,12 +493,8 @@ footer {
 	<span>Created by <a href="https://x.com/adraffy">raffy.eth</a></span>
 </footer>
 <script type="module">
-import {Coin, Record, Profile} from '../../enson.js/dist/index.min.js';
+import {Coin, Record, Profile, dns_encoded} from '../../enson.js/dist/index.min.js';
 import {ethers} from 'https://cdnjs.cloudflare.com/ajax/libs/ethers/6.12.1/ethers.min.js';
-
-// TODO:
-// fix parsers
-// add converters
 
 const STORAGE_KEY = 'ezccip.config';
 
@@ -515,14 +511,18 @@ const FUNC_ENSIP10 = 'ensip10';
 const FUNC_ABI = 'abi';
 const FUNC_CALLDATA = 'calldata';
 
-const SYMBOL_UNSET = Symbol('unset');
-const KEY_PRIMARY = '__PRIMARY';
-
 const SUGGESTED_KEYS = [...Profile.ENS().texts];
 const SUGGESTED_COINS = [...Coin].filter(x => !x.unnamed && !x.legacy).sort((a, b) => {
 	let c = a.type - b.type;
 	return c > 0 ? 1 : c < 0 ? -1 : 0;
 });
+
+const BYTES_OPS = [
+	{name: 'Hex', encode: s => ethers.hexlify(ethers.toUtf8Bytes(s)) },
+	{name: 'Keccak', encode: s => s.startsWith('0x') ? ethers.keccak256(s) : ethers.id(s) },
+	{name: 'Namehash', encode: s => ethers.namehash(s) },
+	{name: 'DNS Encoded', encode: s => ethers.hexlify(dns_encoded(s)) },
+];
 
 const ENSIP10_ABI = new ethers.Interface([
 	'function multicall(bytes[] calls) external view returns (bytes[])',
@@ -606,8 +606,10 @@ data_btn.addEventListener('click', () => {
 		}
 		output_div.replaceChildren(row, create_pre(make_calldata(), true, row, Infinity));
 	} catch (err) {
-		console.log(err);
-		output_div.replaceChildren(create('div', {className: ['log', 'error'], innerHTML: err.message}));
+		console.error(err);
+		let row = create_log({title: 'Unexpected Error'});
+		row.classList.add('error');
+		output_div.replaceChildren(row, create_pre(err.message, false, row));
 	}
 });
 add_field_btn.addEventListener('click', e => { 
@@ -625,9 +627,6 @@ add_field_btn.addEventListener('click', e => {
 	update_ux(); 
 });
 copy_link_btn.addEventListener('click', () => {
-	//let url = new URL(window.location.href);
-	//url.hash = btoa(localStorage[STORAGE_KEY]).replace(/=+$/, '');
-	//navigator.clipboard.writeText(url);
 	navigator.clipboard.writeText(window.location.href);
 });
 for (let f of [endpoint_field, sender_field, name_field]) {
@@ -663,7 +662,7 @@ function process_hash() {
 			update_ux();
 			return true;
 		} catch (err) {
-			console.log(err);
+			console.error(err);
 		}
 	}
 }
@@ -823,9 +822,23 @@ function parse_abi() {
 			let name = `#abi_${i}`;
 			row.append(create('label', {for: name}, 
 				create('span', {className: 'name'}),
-				create('span', {className: 'type'})
+				create('span', {className: 'type'}),
 			));
-			row.append(create('input', {name}));
+			let input_field = create('input', {name});
+			let coder_select = create('select', {className: 'suggest_select'});
+			for (let op of BYTES_OPS) {
+				coder_select.append(create('option', null, op.name));
+			}
+			row.append(input_field, coder_select);
+			coder_select.selectedIndex = -1;
+			input_field.addEventListener('input', update_ux);
+			coder_select.addEventListener('input', () => {
+				let op = BYTES_OPS[coder_select.selectedIndex];
+				coder_select.selectedIndex = -1;
+				if (!op) return;
+				input_field.value = op.encode(input_field.value.trim());
+				update_ux();
+			});
 			abi_fields[i] = row;
 			abi_div.append(row);
 		}
@@ -833,6 +846,7 @@ function parse_abi() {
 		row.classList.remove('hide');
 		row.querySelector('.name').innerText = param.name;
 		row.querySelector('.type').innerText = param.type;
+		row.querySelector('.suggest_select').classList.toggle('hide', param.type !== 'bytes');
 	}
 }
 function parse_name() {
@@ -840,7 +854,7 @@ function parse_name() {
 		let name = name_field.value.trim();
 		if (!name) throw new Error('empty name');
 		name_norm = ethers.ensNormalize(name);
-		name_dns = ethers.dnsEncode(name_norm, 255);
+		name_dns = ethers.hexlify(dns_encoded(name_norm));
 		name_status.innerHTML = '';
 	} catch (err) {
 		name_norm = undefined;
@@ -852,6 +866,7 @@ function parse_name() {
 }
 
 function parse_type(param, input) {
+	// TODO: make this less shit
 	switch (param.type) {
 		case 'boolean': return parse_as_json(input, 'boolean');
 		case 'string':  return parse_as_json(input, 'string');
@@ -891,27 +906,16 @@ function update_ux() {
 		proto: proto_select.value
 	};
 
-	// let params = new URLSearchParams();
-	// add_trimmed(params, 'endpoint', endpoint_field.value);
-	// add_trimmed(params, 'sender', sender_field.value);
-	// add_trimmed(params, 'proto', proto_select.value);
-
 	if (func === FUNC_ABI) {
 		parse_abi();
 		if (!abi) ok = false;
-		//add_trimmed(params, 'abi', abi_ta.value);
 		json.abi = abi_ta.value;
 		if (abi_func) {
-			//abi_func?.inputs.forEach((_, i) => params.append('arg', abi_fields[i].querySelector('input').value));
-			json.args = Array.from(abi_func.inputs, (_, i) => abi_fields[i].querySelector('input').value.trim());	
+			json.args = Array.from(abi_func.inputs, (_, i) => abi_fields[i].querySelector('input').value);	
 		}
 	} else if (func === FUNC_CALLDATA) {
 		if (!parse_calldata()) ok = false;
-		//add_trimmed(params, 'calldata', calldata_ta.value);
 		json.calldata = calldata_ta.value;
-		// config = {
-		// 	calldata: calldata_ta.value.trim()
-		// };
 	} else {
 		let fields = get_fields().map(parse_field);
 		field_count_lbl.innerHTML = `${fields.length} ${plural(fields.length, 'field')}`;
@@ -919,7 +923,6 @@ function update_ux() {
 		multi_select.classList.toggle('hide', fields.length < 2);
 		if (!fields.length) ok = false;
 		parse_name();
-		//add_trimmed(params, 'name', name_field.value);
 		json.name = name_field.value;
 		resolve_btn.disabled = !name_norm;
 		if (fields.some(x => x.error)) ok = false;
@@ -927,14 +930,6 @@ function update_ux() {
 			json.multi = multi_select.value;
 		}
 		json.fields = fields;
-		// for (let {type, arg} of fields) {
-		// 	params.append(type, arg ?? '');
-		// }
-		// config = {
-		// 	name: name_field.value,
-		// 	multi: multi_select.value,
-		// 	fields
-		// };
 	}
 
 	start_btn.disabled = !ok;
@@ -950,15 +945,10 @@ function update_ux() {
 	}
 }
 
-function add_trimmed(params, key, value) {
-	value = value?.trim();
-	if (value) params.append(key, value);
-}
-
 function make_calldata() {
 	if (func_select.value === FUNC_ABI) {
-		return abi.encodeFunctionData(abi_func, abi_func.inputs.map((x, i) => {
-			return parse_type(x, abi_fields[i].querySelector('input').value.trim());
+		return abi.encodeFunctionData(abi_func, abi_func.inputs.map((param, i) => {
+			return parse_type(param, abi_fields[i].querySelector('input').value.trim());
 		}));
 	} else if (func_select.value === FUNC_CALLDATA) {
 		return calldata_ta.value.trim();
@@ -1167,7 +1157,7 @@ async function try_call() {
 			output_div.append(row, create_pre(message, false, row));
 		}
 	} catch (err) {
-		console.log(err);
+		console.error(err);
 		let row = create_log({title: 'Unexpected Error'});
 		row.classList.add('error');
 		output_div.append(row, create_pre(err.message, false, row));
