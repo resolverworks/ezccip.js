@@ -710,7 +710,7 @@ function params_from_config(json) {
 			v.forEach(({type, arg}) => params.append('field', type_has_arg(type) ? `${type}-${arg}` : type));
 		} else if (k === 'args') {
 			v.forEach(x => params.append('arg', x));
-		} else {
+		} else if (v) {
 			params.append(k, v);
 		}
 	}
