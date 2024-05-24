@@ -281,17 +281,24 @@ textarea {
 #output .tag.code {
 	font: 14px monospace;
 }
-#output .tag.http {
-	background-color: #def;
+#output .tag.addr { background-color: #f8eeff;}
+#output .tag.hash { 
+	background-color: #eff; 
+	font-size: 12px;
 }
+#output .tag.http { background-color: #def; }
 #output .tag.primary {
 	font: bold 12px sans-serif;
 	background-color: #ffc;
 }
+#output .tag.selector {
+	font: 12px monospace;
+	background-color: #ffe;
+}
 #output .tag.record {
 	border: none;
-	background-color: #c4c4;
 	font: 11px monospace;
+	background-color: #c4c4;
 }
 #output .record[data-name="text"] { background-color: #66f4; }
 #output .record[data-name="addr"] { background-color: #0a84; }
@@ -597,6 +604,7 @@ stop_btn.addEventListener('click', () => {
 	stop_btn.disabled = true;
 });
 data_btn.addEventListener('click', () => {
+	output_div.innerHTML = '';
 	try {
 		start_time = Date.now();
 		let row = create_log({title: 'Calldata'});
@@ -604,12 +612,9 @@ data_btn.addEventListener('click', () => {
 			add_tag(row, create_tag('Signature', abi_func.format(), 'code'));
 			add_tag(row, create_tag('Inputs', abi_func.inputs.length));
 		}
-		output_div.replaceChildren(row, create_pre(make_calldata(), true, row, Infinity));
+		output_div.append(row, create_pre(make_calldata(), true, row, Infinity));
 	} catch (err) {
-		console.error(err);
-		let row = create_log({title: 'Unexpected Error'});
-		row.classList.add('error');
-		output_div.replaceChildren(row, create_pre(err.message, false, row));
+		append_error(err);
 	}
 });
 add_field_btn.addEventListener('click', e => { 
@@ -818,7 +823,7 @@ function parse_abi() {
 	for (let i = 0; i < n; i++) {
 		let row = abi_fields[i];
 		if (!row) {
-			row = create('div', {className: ['wide', 'field']});
+			row = create('div', {className: 'wide field'});
 			let name = `#abi_${i}`;
 			row.append(create('label', {for: name}, 
 				create('span', {className: 'name'}),
@@ -1029,9 +1034,9 @@ async function try_call() {
 		}
 		
 		let request_hash = ethers.keccak256(request);
-		let row1 = create_log({title: 'Request Data'});
-		add_tag(row1, create_tag('Sender', sender, 'code'));
-		add_tag(row1, create_tag('Hash', request_hash, 'code'));
+		let row1 = create_log({title: '📜️ Request Data'});
+		add_tag(row1, create_tag('Sender', sender, 'code addr'));
+		add_tag(row1, create_tag('Hash', request_hash, 'code hash'));
 		output_div.append(row1, create_pre(request, true, row1));
 
 		let res = await fetch(url, options);
@@ -1061,19 +1066,9 @@ async function try_call() {
 					['address', 'uint64', 'bytes32', 'bytes32'],
 					[sender, exp, request_hash, signed_response_hash]
 				);
-				
-				let row_proto = create_log({title: 'TOR Protocol'});
-				add_tag(row_proto, create_exp(exp));
-				add_tag(row_proto, create_tag('Hash', hash, 'code'));
-				add_tag(row_proto, create_tag('Signature', sig, 'code'));
-				output_div.append(row_proto);
-
+				create_proto_row({kind: 'TOR', hash, sig, exp});
 				let signed = ethers.recoverAddress(hash, sig);
-				let row_signed = create_log({title: 'Signed Response Data'});
-				add_tag(row_signed, create_tag('Signed by', signed, 'code'));
-				add_tag(row_signed, create_tag('Hash', signed_response_hash, 'code'));
-				output_div.append(row_signed, create_pre(signed_response, true, row_signed));
-				
+				create_signed_row({signed, signed_response, signed_response_hash});
 				response = signed_response;
 			} else if (proto_select.value === 'ens') {
 				let [signed_response, exp, sig] = ethers.AbiCoder.defaultAbiCoder().decode(['bytes', 'uint64', 'bytes'], response);
@@ -1082,22 +1077,12 @@ async function try_call() {
 					['bytes', 'address', 'uint64', 'bytes32', 'bytes32'], 
 					['0x1900', sender, exp, request_hash, signed_response_hash]
 				);
-				
-				let row_proto = create_log({title: 'ENS Protocol'});
-				add_tag(row_proto, create_exp(exp));
-				add_tag(row_proto, create_tag('Hash', hash, 'code'));
-				add_tag(row_proto, create_tag('Signature', sig, 'code'));
-				output_div.append(row_proto);
-
+				create_proto_row({kind: 'ENS', hash, sig});
 				let signed = ethers.recoverAddress(hash, sig);
-				let row_signed = create_log({title: 'Signed Response Data'});
-				add_tag(row_signed, create_tag('Signed by', signed, 'code'));
-				add_tag(row_signed, create_tag('Hash', signed_response_hash, 'code'));
-				output_div.append(row_signed, create_pre(signed_response, true, row_signed));
-				
+				create_signed_row({signed, signed_response, signed_response_hash});
 				response = signed_response;
 			} else {
-				let row = create_log({title: 'Unsigned Response Data'});
+				let row = create_log({title: '🔓️ Unsigned Response Data'});
 				output_div.append(row, create_pre(response, true, row));
 			}
 
@@ -1119,11 +1104,13 @@ async function try_call() {
 					[answers] = ENSIP10_ABI.decodeFunctionResult(multicall, response);
 				}
 				calls.forEach((call, i) => {
+					let answer = answers[i];
 					let {name, args: [_, arg], selector} = ENSIP10_ABI.parseTransaction({data: call});
 					let row = create_log({time: `#${i+1}`});
-					add_tag(row, create('span', {className: ['tag', 'record'], dataset: {name}, innerHTML: `${name}(${arg ?? ''})`}));
-					add_tag(row, create_tag('Request', create_copy_btn(call)));
-					add_tag(row, create_tag('Response', create_copy_btn(answers[i])));
+					add_tag(row, create('span', {className: 'tag record', dataset: {name}, innerHTML: `${name}(${arg ?? ''})`}));
+					add_tag(row, create_tag('Request', [call.slice(0, 10), create_copy_btn(call)], 'code selector'));
+					add_tag(row, create_tag('Response', create_copy_btn(answer)));
+					add_tag(row, create_tag(null, `${(answer.length - 2) >> 1} bytes`, 'size'));
 					output_div.append(row);
 				});
 
@@ -1141,26 +1128,19 @@ async function try_call() {
 						return [type.name || `[${i}]`, res[i]];
 					});
 					let json = Object.fromEntries(m);
-					let row = create_log({title: 'ABI Decoded Response'});
+					let row = create_log({title: '🔬️ ABI Decoded Response'});
 					add_tag(row, create_tag('Outputs', m.length));
 					add_tag(row, create_copy_btn(JSON.stringify(json, ext_stringify)));
 					output_div.append(row, create_pre_json(json));
 				} catch (err) {
-					let row = create_log({title: 'ABI Decode Error'});
-					row.classList.add('error');
-					output_div.append(row, create_pre(err.message, false, row));
+					append_error(err, 'ABI Decode Error');
 				}
 			}
 		} else {
-			let row = create_log({title: 'CCIP-Read Error'});
-			row.classList.add('error');
-			output_div.append(row, create_pre(message, false, row));
+			append_error(message, 'CCIP-Read Error');
 		}
 	} catch (err) {
-		console.error(err);
-		let row = create_log({title: 'Unexpected Error'});
-		row.classList.add('error');
-		output_div.append(row, create_pre(err.message, false, row));
+		append_error(err);
 	}
 	let row = create_log();
 	add_tag(row, create_tag('Duration', `${((Date.now() - start_time)/1000).toFixed(2)} sec`));
@@ -1173,6 +1153,21 @@ async function try_call() {
 	aborter = null;
 }
 
+function create_proto_row({kind, hash, sig, exp}) {
+	let row = create_log({title: `🔗️ ${kind} Protocol`});
+	add_tag(row, create_exp(exp));
+	add_tag(row, create_tag('Signature Length', (sig.length - 2) >> 1, 'size'));
+	add_tag(row, create_tag('Signature', sig, 'code'));
+	add_tag(row, create_tag('Hash', hash, 'code hash'));
+	output_div.append(row);
+}
+function create_signed_row({signed, signed_response, signed_response_hash}) {
+	let row = create_log({title: '🔏️ Signed Response Data'});
+	add_tag(row, create_tag('Recovered Signer', signed, 'code addr'));
+	add_tag(row, create_tag('Hash', signed_response_hash, 'code hash'));
+	output_div.append(row, create_pre(signed_response, true, row));
+}
+
 function delete_fields() {
 	get_fields().forEach(x => x.remove());
 }
@@ -1181,7 +1176,7 @@ function get_fields() {
 }
 
 function add_field({type, arg} = {}) {
-	let row = create('div', {className: ['wide', 'field']});
+	let row = create('div', {className: 'wide field'});
 	let type_select = create('select', {className: 'type_select'});
 	type_select.append(create('option', {value: TYPE_TEXT}, 'text(key)'));
 	type_select.append(create('option', {value: TYPE_ADDR}, 'addr(coin?)'));
@@ -1190,7 +1185,7 @@ function add_field({type, arg} = {}) {
 	type_select.append(create('option', {value: TYPE_NAME}, 'name()'));
 	let arg_field = create('input', {className: 'arg_field'});
 	let delete_btn = create('button', {
-		className: ['delete_btn', 'icon'],
+		className: 'delete_btn icon',
 		click() {
 			row.remove();
 			update_ux();
@@ -1300,8 +1295,16 @@ function create_log({title, time = true} = {}) {
 	if (time === true) time =  `${Math.round(Date.now() - start_time)} ms`;
 	let tags = create('div', {className: 'tags'});
 	row.append(create('span', {className: 'time', innerHTML: time}), tags);
-	if (title) add_tag(row, create('span', {className: ['tag', 'primary'], innerHTML: title}));
+	if (title) add_tag(row, create('span', {className: 'tag primary', innerHTML: title}));
 	return row;
+}
+function append_error(err, title = 'Unexpected Error') {
+	let row = create_log({title: `⚠️ ${title}`});
+	row.classList.add('error');
+	output_div.append(row, create_pre(err.message || err, false, row));
+	if (err instanceof Error) {
+		console.error(err);
+	}
 }
 function add_tag(row, tag) {
 	row.querySelector('.tags').append(tag);
@@ -1309,7 +1312,7 @@ function add_tag(row, tag) {
 function create_pre(data, hex, row, max = 1000) {
 	let bytes = hex ? ethers.getBytes(data) : ethers.toUtf8Bytes(data);
 	if (row) {
-		add_tag(row, create('span', {className: ['tag', 'size'], innerHTML: `${bytes.length} bytes`}));
+		add_tag(row, create_tag(null, `${bytes.length} bytes`, 'size'));
 		add_tag(row, create_copy_btn(data));
 	}
 	let pre = create('pre', {innerText: data});
@@ -1330,22 +1333,26 @@ function ext_stringify(_, x) {
 	return x;
 }
 function create_tag(key, value, cls) {
-	let tag = create('span', {className: 'tag'});
-	if (cls) tag.classList.add(cls);
-	tag.append(create('span', {className: 'key', innerText: key}));
+	let tag = create('span', {className: ['tag', cls]});
+	if (key) {
+		tag.append(create('span', {className: 'key', innerText: key}));
+	}
 	if (value instanceof HTMLElement) {
 		tag.append(value);
+	} else if (Array.isArray(value)) {
+		tag.append(...value);
 	} else if (value === undefined) {
-		tag.append(create('span', {className: ['value', 'null'], innerText: '«null»'}));
+		tag.append(create('span', {className: 'value null', innerText: '«null»'}));
 	} else {
-		tag.append(create('span', {className: ['value'], innerText: value}));
+		tag.append(create('span', {className: 'value', innerText: value}));
 	}
 	return tag;
 }
 
 function create_copy_btn(s) {
 	return create('button', {
-		className: 'copy', 
+		className: 'copy',
+		title: s,
 		click() {
 			const cls = 'copied';
 			document.querySelectorAll(`.${cls}`).forEach(x => x.classList.remove(cls));
@@ -1368,7 +1375,8 @@ function create(el, args, ...a) {
 			} else if (k === 'className') {
 				for (let x of [v].flat(Infinity)) {
 					if (typeof x === 'string') {
-						el.classList.add(x);
+						x = x.trim();
+						if (x) el.classList.add(...x.split(/\s+/));
 					} else if (x) {
 						Object.entries(x).forEach(([k, v]) => el.classList.toggle(k, !!v));
 					}

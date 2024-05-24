@@ -100,10 +100,9 @@ http.close();
 * `serve()` will bind requests to the `sender` if the protocol needs a target and no `resolver` was provided.
 * Provide a `resolvers` mapping to pair endpoint suffixes to specific contract deployments.
     * The [demo](./test/demo.js#L39) uses `s` to correspond to the [Sepolia deployment](https://sepolia.etherscan.io/address/0x9Ec7f2ce83fcDF589487303fA9984942EF80Cb39), which makes requests to the modified endpoint `http://localhost:8016/s` target that contract, regardless of sender. 
-* An `endpoint` &harr; `contract` pairing is **required** to support wrapped/recursive CCIP calls!
+* An `endpoint` &harr; `contract` pairing is **required** to support wrapped CCIP calls!
 
-
-### callRecord()
+### processENSIP10()
 
 Apply ENSIP-10 `calldata` to a `Record`-object and generate the corresponding ABI-encoded response.  This is a pure free-function.
 ```js
@@ -112,5 +111,5 @@ let record = {
     addr(type) { if (type == 60) return '0x1234'; }
 };
 let calldata = '0x...'; // encodeFunctionData('text', ['name']);
-let res = await callRecord(record, calldata); // encodeFunctionResult('text', ['raffy']);
+let res = await processENSIP10(record, calldata); // encodeFunctionResult('text', ['raffy']);
 ```
