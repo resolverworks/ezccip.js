@@ -100,6 +100,11 @@ h1 {
 	padding-bottom: 8px;
 	border-bottom: 2px solid #fff;
 }
+#examples code {
+	background-color: #fff;
+	padding: 2px 4px;
+	border: 1px solid #ccc;
+}
 .rows {
 	display: flex;
 	flex-direction: column;
@@ -400,7 +405,7 @@ footer {
 	}'>Calldata</button>
 	<b>Examples:</b>
 	<button data-prefix="Examples" data-config='{
-		"endpoint": "https://raffy.xyz/tog/raffyeth",
+		"endpoint": "https://raffy.xyz/tog/raffyeth/",
 		"name": "raffy.eth",
 		"fields": [{"type":"text", "arg": "description"}, {"type":"text", "arg": "location"}]
 	}'>raffy&apos;s TOG</button>
@@ -409,7 +414,12 @@ footer {
 		"abi": "function resolve(bytes memory name, uint16 qtype) returns (tuple(bytes, bytes)[] memory rrs)",
 		"args": ["0x076272616e746c7905726f636b7300", "16"],
 		"proto": "raw"
-	}'>OffchainDNSOracle</button>
+	}'>OffchainDNSOracle: <code>brantly.rocks</code></button>
+	<button data-config='{
+		"endpoint": "https://ens-gateway.onrender.com/",
+		"calldata": "0x33e953b500000000000000000000000000000000000000000000000000000000000000800000000000000000000000007c6efcb602bc88794390a0d74c75ad2f1249a17f00000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000020520000000000000000000000000000000000000000000000000000000000000001004001ff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000020cb0cbc8493baf4a7b1972914ba0be89040e56e4a3c98d60268fe37b8c8e546d9",
+		"proto": "raw"
+	}'>EVMGateway: <code>raffy.teamnick.eth</code></button>
 </div>
 <main>
 <div id="config" class="rows">
@@ -1086,7 +1096,7 @@ async function try_call() {
 				response = signed_response;
 			} else {
 				let row = create_log({title: '🔓️ Unsigned Response Data'});
-				output_div.append(row, create_pre(response, true, row));
+				output_div.append(row, create_pre(response, true, row, Infinity));
 			}
 
 			if (func_select.value === 'ensip10') {
