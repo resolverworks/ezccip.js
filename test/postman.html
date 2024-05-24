@@ -1077,7 +1077,7 @@ async function try_call() {
 					['bytes', 'address', 'uint64', 'bytes32', 'bytes32'], 
 					['0x1900', sender, exp, request_hash, signed_response_hash]
 				);
-				create_proto_row({kind: 'ENS', hash, sig});
+				create_proto_row({kind: 'ENS', hash, sig, exp});
 				let signed = ethers.recoverAddress(hash, sig);
 				create_signed_row({signed, signed_response, signed_response_hash});
 				response = signed_response;
