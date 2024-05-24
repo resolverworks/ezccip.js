@@ -642,13 +642,13 @@ for (let f of [endpoint_field, sender_field, name_field]) {
 		}
 	});
 }
-window.addEventListener('hashchange', process_hash);
+window.addEventListener('hashchange', () => process_hash());
 
 for (let btn of document.querySelectorAll('#examples button')) {
 	btn.addEventListener('click', () => load_config(JSON.parse(btn.dataset.config)));
 }
 
-if (!process_hash()) {
+if (!process_hash(true)) {
 	try {
 		//load_config(JSON.parse(localStorage[STORAGE_KEY]));
 		load_config(localStorage[STORAGE_KEY]);
@@ -657,14 +657,16 @@ if (!process_hash()) {
 	}
 }
 
-function process_hash() {
+function process_hash(first) {
 	let hash = window.location.hash.slice(1);
 	//history.replaceState(null, null, ' ');
 	if (hash) {
 		try {
 			load_config(config_from_params(new URLSearchParams(hash)));
 			//load_config(JSON.parse(atob(hash)));
-			update_ux();
+			if (update_ux() && first) {
+				setTimeout(() => start_btn.click(), 50);
+			}
 			return true;
 		} catch (err) {
 			console.error(err);
@@ -893,7 +895,6 @@ function parse_as_json(input, type, test) {
 }
 
 function update_ux() {
-
 	const func = func_select.value;
 	ensip10_div.classList.toggle('hide',  func !== FUNC_ENSIP10);
 	abi_div.classList.toggle('hide',      func !== FUNC_ABI);
@@ -948,6 +949,8 @@ function update_ux() {
 	if (!aborter) {
 		output_div.innerHTML = '';
 	}
+
+	return ok;
 }
 
 function make_calldata() {
