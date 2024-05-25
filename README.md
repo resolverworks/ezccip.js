@@ -16,6 +16,8 @@ Turnkey [EIP-3668: CCIP-Read](https://eips.ethereum.org/EIPS/eip-3668) Handler f
     * `multicall([resolve(name, ...), ...])`
     * `multicall([resolve(name, multicall([...])), ...])`
 * use [`serve()`](#serve) to quickly launch a server
+* [**CCIP Postman**](https://resolverworks.github.io/ezccip.js/test/postman.html) ⭐️
+    * directly debug any CCIP-Read server (no RPC)
 
 ## Demo
 
@@ -28,8 +30,6 @@ Turnkey [EIP-3668: CCIP-Read](https://eips.ethereum.org/EIPS/eip-3668) Handler f
     * Context: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/`
 * **ENS**: [`ezccip.eth`](https://adraffy.github.io/ens-normalize.js/test/resolver.html?sepolia#ezccip.eth) (Sepolia)
     * Context: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/s`
-* [**CCIP Postman**](https://resolverworks.github.io/ezccip.js/test/postman.html) ⭐️
-    * Call any CCIP-Read server directly
 
 ## Usage
 
@@ -95,6 +95,10 @@ Start a [simple server](./src/serve.js) for an EZCCIP instance or a function rep
 let {http} = await serve(ezccip); // see types for more configuration
 // ...
 http.close();
+
+// minimal example:
+// return fixed text() for any name
+await serve(() => { text: () => 'Raffy' });
 ```
 
 * `serve()` will bind requests to the `sender` if the protocol needs a target and no `resolver` was provided.
