@@ -1169,7 +1169,7 @@ async function try_call() {
 function create_proto_row({kind, hash, sig, exp}) {
 	let row = create_log({title: `🔗️ ${kind} Protocol`});
 	add_tag(row, create_exp(exp));
-	add_tag(row, create_tag('Signature Length', (sig.length - 2) >> 1, 'size'));
+	add_tag(row, create_sig_style(sig));
 	add_tag(row, create_tag('Signature', sig, 'code'));
 	add_tag(row, create_tag('Hash', hash, 'code hash'));
 	output_div.append(row);
@@ -1402,7 +1402,18 @@ function create(el, args, ...a) {
 	el.append(...a.flat(Infinity));
 	return el;
 }
-
+function create_sig_style(sig) {
+	let n = (sig.length - 1) >> 1;
+	let style = 'Unknown';
+	switch (n) {
+		case 65: style = 'r+s+v'; break;
+		case 64: style = 'r+vs'; break;
+	}
+	return create_tag('Signature Style', [create('b', {innerHTML: style}), format_bytes(n)], 'size');
+}
+function format_bytes(n) {
+	return `${n} ${plural(n, 'byte')}`;
+}
 function visit(href) {
 	create('a', {target: '_blank', href}).click();
 }
