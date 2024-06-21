@@ -108,7 +108,7 @@ await serve(() => { text: () => 'Raffy' });
 
 ### processENSIP10()
 
-Apply ENSIP-10 `calldata` to a `Record`-object and generate the corresponding ABI-encoded response.  This is a pure free-function.
+Apply ENSIP-10 `calldata` to a `Record`-object and generate the corresponding ABI-encoded response.  This is a free-function.
 ```js
 let record = {
     text(key) { if (key == 'name') return 'raffy'; }
