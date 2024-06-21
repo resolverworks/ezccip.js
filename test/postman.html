@@ -70,9 +70,7 @@ button.copy.copied {
 #add_field_btn {
 	background-color: #efe;
 }
-#delete_fields_btn {
-	align-self: stretch;
-}
+/* #mod_fields button { align-self: stretch; } */
 .delete_btn {
 	background-color: #fee;
 }
@@ -339,6 +337,29 @@ textarea {
 @keyframes spin {
 	to { transform:rotate(360deg); }
 }
+#profile_dialog {
+	width: 80vw;
+	background-color: #eee;
+	border-radius: 8px;
+	border: 2px solid #000;
+ 	box-shadow: 0 0 8px #0008;
+	/* display: flex;
+	gap: 16px;
+	align-items: center */
+}
+#profile_dialog .row {
+	margin-top: 16px;
+}
+#profile_dialog i {
+	color: #666;
+}
+#profile_dialog code {
+	font-family: monospace;
+	background-color: #cff;	
+}
+#profile_dialog::backdrop {
+	backdrop-filter: blur(2px);
+}
 footer {
 	text-align: center;
 	color: #666;
@@ -364,6 +385,13 @@ footer {
 </style>
 </head>
 <body>
+<dialog id="profile_dialog">
+	<textarea id="profile_ta" rows="16" autofocus></textarea>
+	<div class="row">
+		<i>Accepts <code>json</code> or <code>[\s,]</code>-separated input.</i>
+		<button id="profile_save_btn" style="margin-left: auto">📝️ Update</button>
+	</div>
+</dialog>
 <header>
 	<h1><a target="_blank" href="https://eips.ethereum.org/EIPS/eip-3668">CCIP-Read</a> Postman</h1>
 	<a target="_blank" href="https://github.com/resolverworks/ezccip.js">resolverworks/ezccip.js</a>
@@ -430,7 +458,7 @@ footer {
 			<i id="endpoint_status"></i>
 			<button id="endpoint_btn" disabled>↗️ Visit</button>
 		</div>
-		<input class="big" id="endpoint_field" placeholder="https://raffy.xyz/tog/">
+		<input class="big" id="endpoint_field" placeholder="https://raffy.xyz/tog/{data}">
 	</div>
 	<div>
 		<div class="header">
@@ -467,9 +495,10 @@ footer {
 		<div id="mod_fields" class="row">
 			<button id="add_field_btn" title="[ALT] Add Default Profile">✏️ Add Field</button>
 			<span id="field_count_lbl">0 fields</span>
+			<button id="edit_profile_btn" title="JSON&#10;[ALT] Text">📝️ Profile</button>
 			<button id="delete_fields_btn" class="hide delete_btn">
 				<svg height="16" stroke-linejoin="round" style="color: currentcolor;" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.75 2.75C6.75 2.05964 7.30964 1.5 8 1.5C8.69036 1.5 9.25 2.05964 9.25 2.75V3H6.75V2.75ZM5.25 3V2.75C5.25 1.23122 6.48122 0 8 0C9.51878 0 10.75 1.23122 10.75 2.75V3H12.9201H14.25H15V4.5H14.25H13.8846L13.1776 13.6917C13.0774 14.9942 11.9913 16 10.6849 16H5.31508C4.00874 16 2.92263 14.9942 2.82244 13.6917L2.11538 4.5H1.75H1V3H1.75H3.07988H5.25ZM4.31802 13.5767L3.61982 4.5H12.3802L11.682 13.5767C11.6419 14.0977 11.2075 14.5 10.6849 14.5H5.31508C4.79254 14.5 4.3581 14.0977 4.31802 13.5767Z" fill="currentColor"></path></svg>
-				Remove All</button>
+				Clear</button>
 			<select id="multi_select" class="hide" style="margin-left: auto">
 				<option value="inner">resolve(name, multicall([...]))</option>
 				<option value="outer">multicall([resolve(name, ...), ...])</option>
@@ -513,6 +542,8 @@ footer {
 import {Coin, Record, Profile, dns_encoded} from '../../enson.js/dist/index.min.js';
 import {ethers} from 'https://cdnjs.cloudflare.com/ajax/libs/ethers/6.12.1/ethers.min.js';
 
+const JSON_INDENT = '    '; // \t
+
 const STORAGE_KEY = 'ezccip.config';
 
 const TEMPLATE_DATA = '{data}';
@@ -529,10 +560,7 @@ const FUNC_ABI = 'abi';
 const FUNC_CALLDATA = 'calldata';
 
 const SUGGESTED_KEYS = [...Profile.ENS().texts];
-const SUGGESTED_COINS = [...Coin].filter(x => !x.unnamed && !x.legacy).sort((a, b) => {
-	let c = a.type - b.type;
-	return c > 0 ? 1 : c < 0 ? -1 : 0;
-});
+const SUGGESTED_COINS = [...Coin].filter(x => !x.unnamed && !x.legacy).sort((a, b) => a.type > b.type ? 1 : -1);
 
 const BYTES_OPS = [
 	{name: 'Hex', encode: s => ethers.hexlify(ethers.toUtf8Bytes(s)) },
@@ -582,6 +610,10 @@ const field_count_lbl = document.querySelector('#field_count_lbl');
 const multi_select = document.querySelector('#multi_select');
 const proto_select = document.querySelector('#proto_select');
 const output_div = document.querySelector('#output');
+const edit_profile_btn = document.querySelector('#edit_profile_btn');
+const profile_dialog = document.querySelector('#profile_dialog');
+const profile_ta = document.querySelector('#profile_ta');
+const profile_save_btn = document.querySelector('#profile_save_btn');
 
 let start_time;
 let aborter;
@@ -606,6 +638,44 @@ endpoint_btn.addEventListener('click', () => visit(endpoint));
 delete_fields_btn.addEventListener('click', () => {
 	delete_fields();
 	update_ux();
+});
+edit_profile_btn.addEventListener('click', e => {
+	let p = parse_profile();
+	profile_ta.value = e.altKey ? Array.from(p).join(' ') : JSON.stringify(p.toJSON(true), ext_stringify, JSON_INDENT);
+	profile_dialog.showModal();
+});
+profile_save_btn.addEventListener('click', () => {
+	let text = profile_ta.value.trim();
+	let p;
+	try {
+		if (text.startsWith('{')) {
+			p = Profile.from(JSON.parse(text));
+		} else {
+			p = new Profile();
+			for (let s of text.split(/[\s,]+/)) {
+				s = s.trim();
+				if (s) p.set(s);
+			}
+		}
+	} catch (err) {
+		window.alert(err);
+		return;
+	}
+	delete_fields();
+	for (let key of p.texts) {
+		add_field({type: TYPE_TEXT, arg: key});
+	}
+	for (let type of p.coins) {
+		let coin = Coin.fromType(type);
+		add_field({type: TYPE_ADDR, arg: coin.unnamed ? coin.toJSON() : `$${coin.name}` })		
+	}
+	if (p.chash)  add_field({type: TYPE_CHASH});
+	if (p.pubkey) add_field({type: TYPE_PUBKEY});
+	if (p.name)   add_field({type: TYPE_NAME});
+	if (p.addr0)  add_field({type: TYPE_ADDR});
+	update_ux();
+	profile_dialog.close();
+
 });
 resolve_btn.addEventListener('click', () => visit(`https://adraffy.github.io/ens-normalize.js/test/resolver.html#${name_norm}`));
 start_btn.addEventListener('click', try_call);
@@ -971,37 +1041,7 @@ function make_calldata() {
 	} else if (func_select.value === FUNC_CALLDATA) {
 		return calldata_ta.value.trim();
 	} else {
-		let profile = new Profile();
-		for (let f of get_fields()) {
-			let {type, arg} = parse_field(f);
-			switch (type) {
-				case TYPE_CHASH: {
-					profile.chash = true;
-					break;
-				}
-				case TYPE_PUBKEY: {
-					profile.pubkey = true;
-					break;
-				}
-				case TYPE_NAME: {
-					profile.name = true;
-					break;
-				}
-				case TYPE_TEXT: {
-					profile.setText(arg);
-					break;
-				}
-				case TYPE_ADDR: {
-					let coin = parse_coin(arg);
-					if (coin) {
-						profile.setCoin(coin);
-					} else {
-						profile.addr0 = true;
-					}
-					break;
-				}
-			}
-		}
+		let profile = parse_profile();
 		let calls = profile.makeCallsForName(name_norm);
 		if (calls.length == 1) {
 			return ENSIP10_ABI.encodeFunctionData('resolve', [name_dns, calls[0]]);
@@ -1205,6 +1245,14 @@ function add_field({type, arg} = {}) {
 			update_ux();
 		}
 	}, delete_fields_btn.querySelector('svg').cloneNode(true));
+	let text_select = create('select', {
+		className: 'suggest_select',
+		input() {
+			arg_field.value = this.value;
+			this.selectedIndex = -1;
+			update_ux();
+		}	
+	}, SUGGESTED_KEYS.map(x => create('option', null, x)));
 	let addr_select = create('select', {
 		className: 'suggest_select',
 		input() {
@@ -1217,16 +1265,10 @@ function add_field({type, arg} = {}) {
 		let desc = chain ? `Chain: ${chain}` : `Type: ${type}`;
 		return create('option', {value: `$${name}`}, `[${name}] ${title} (${desc})`);
 	}));
-	let text_select = create('select', {
-		className: 'suggest_select',
-		input() {
-			arg_field.value = this.value;
-			this.selectedIndex = -1;
-			update_ux();
-		}	
-	}, SUGGESTED_KEYS.map(x => create('option', null, x)));
+	text_select.selectedIndex = -1;
+	addr_select.selectedIndex = -1;
 	type_select.addEventListener('input', () => {
-		arg_field.value = '';
+		//arg_field.value = '';
 		update_ux();
 	});
 	arg_field.addEventListener('input', update_ux);
@@ -1258,24 +1300,56 @@ function parse_field(f) {
 	let arg = arg_field.value.trim();
 	if (type === TYPE_TEXT) {
 		arg_field.placeholder = 'key';
-		if (!arg) return {type, error: true};
-		if (arg.startsWith('"') && arg.endsWith('"')) { // unwrap quoted
-			try {
-				arg = JSON.parse(arg);
-			} catch (err) {
-			}
-		}
-		return {type, arg};
+		//if (arg.startsWith('"') && arg.endsWith('"')) arg = arg.slice(1, -1);
+		return {type, arg, error: !arg.length};
 	} else if (type === TYPE_ADDR) {
 		arg_field.placeholder = 'coinType • $abbr • <empty>';
 		try {
 			parse_coin(arg);
 			return {type, arg};
 		} catch (err) {
-			return {type, error: true};
+			return {type, arg, error: true};
 		}
 	}
 	return {type};
+}
+
+function parse_profile() {
+	let profile = new Profile();
+	for (let f of get_fields()) {
+		let {type, arg, error} = parse_field(f);
+		if (error) continue;
+		switch (type) {
+			case TYPE_CHASH: {
+				profile.chash = true;
+				break;
+			}
+			case TYPE_PUBKEY: {
+				profile.pubkey = true;
+				break;
+			}
+			case TYPE_NAME: {
+				profile.name = true;
+				break;
+			}
+			case TYPE_TEXT: {
+				if (arg) {
+					profile.setText(arg);
+				}
+				break;
+			}
+			case TYPE_ADDR: {
+				let coin = parse_coin(arg);
+				if (coin) {
+					profile.setCoin(coin);
+				} else {
+					profile.addr0 = true;
+				}
+				break;
+			}
+		}
+	}
+	return profile;
 }
 
 function parse_coin(s) {
@@ -1286,7 +1360,7 @@ function parse_coin(s) {
 	} else if (/^(0x)?[0-9a-f]+$/i.test(s)) {
 		return Coin.fromType(BigInt(s));
 	} else {
-		throw new Error('unknown coin format');
+		throw new Error(`unknown coin format: ${s}`);
 	}
 }
 
@@ -1334,7 +1408,7 @@ function create_pre(data, hex, row, max = 1000) {
 	return pre;
 }
 function create_pre_json(json) {
-	let text = JSON.stringify(json, ext_stringify, '    ');
+	let text = JSON.stringify(json, ext_stringify, JSON_INDENT);
 	return create('pre', {innerText: text});
 }
 function ext_stringify(_, x) {
@@ -1343,6 +1417,8 @@ function ext_stringify(_, x) {
 		return Number.isSafeInteger(i) ? i : ethers.toBeHex(x);
 	} else if (x instanceof Uint8Array) {
 		return ethers.hexlify(x);
+	} else if (x instanceof Set) {
+		return [...x];
 	}
 	return x;
 }

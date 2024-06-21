@@ -196,11 +196,15 @@ class EZCCIP {
 			history.args = history.show = args;
 			let res = await fn(args, context, history);
 			if (!res) {
+				// falsy  implies return ()
 				res = '0x';
 			} else if (Array.isArray(res)) {
 				// an array implies we need to encode the arguments
-				// otherwise, the result is considered already encoded
 				res = abi.encodeFunctionResult(frag, res);
+			} else if (typeof res !== 'string') { 
+				// otherwise, the result is considered already encoded
+				// support returning Uint8Array
+				res = utils.hexlify(res);
 			}
 			return res;
 		} catch (err) {

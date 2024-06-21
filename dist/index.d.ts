@@ -31,7 +31,7 @@ type CallContext = {
 	resolver: HexString;
 	history: History;
 } & CallContextExtra;
-type CCIPReadFunction = (args: Result, context: CallContext, history: History) => Promise<HexString | any[] | undefined>; 
+type CCIPReadFunction = (args: Result, context: CallContext, history: History) => Promise<BytesLike | any[] | undefined>; 
 type ENSIP10Function = (name: string, context: CallContext) => Promise<Record | undefined>;
 type EZCCIPConfig = {
 	protocol?: SigningProtocol;

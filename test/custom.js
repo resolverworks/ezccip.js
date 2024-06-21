@@ -32,3 +32,36 @@ test('serve w/custom function', async () => {
 	
 	assert.deepEqual(result.toArray(), fn(args));
 });
+
+test('return args', async T => {
+	let ezccip = new EZCCIP();	
+	let ccip = await serve(ezccip, {log: true});
+	after(() => ccip.http.close());
+	
+	let abi = new ethers.Interface(['function f(uint256) returns (uint256)']);
+	let impls = Object.entries({
+		Arguments:  ([x]) => [x],
+		Hex:        ([x]) => ethers.AbiCoder.defaultAbiCoder().encode(['uint256'], [x]),
+		Uint8Array: ([x]) => ethers.getBytes(ethers.toBeHex(x, 32))
+	});
+
+	const EXPECT = 1337n;
+	let frag = abi.getFunction('f');
+	for (let [style, fn] of impls) {
+		await T.test(`encoding: ${style}`, async () => {
+			ezccip.register(abi, fn);
+			let res = await fetch(ccip.endpoint, {
+				method: 'POST',
+				body: JSON.stringify({
+					sender: ethers.ZeroAddress,
+					data: abi.encodeFunctionData(frag, [EXPECT])
+				})
+			});
+			let {data} = await res.json();
+			let answer = abi.getAbiCoder().decode(['bytes', 'uint64', 'bytes'], data)[2]; // ignore signing
+			let result = abi.decodeFunctionResult(frag, answer);
+			assert.deepEqual(result.toArray(), [EXPECT]);
+		});
+	}
+
+});
