@@ -315,7 +315,7 @@ function abi_types_str(types) {
 	return v.join('|');
 }
 
-function serve(ezccip, {port, resolvers, log = true, protocol = 'tor', signingKey, ...a} = {}) {
+function serve(ezccip, {port = 0, resolvers, log = true, protocol = 'tor', signingKey, ...a} = {}) {
 	if (ezccip instanceof Function) {
 		let temp = new EZCCIP();
 		temp.enableENSIP10(ezccip);

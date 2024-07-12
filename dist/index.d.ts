@@ -32,6 +32,7 @@ type CallContext = {
 	history: History;
 } & CallContextExtra;
 type CCIPReadFunction = (args: Result, context: CallContext, history: History) => Promise<BytesLike | any[] | undefined>; 
+type CCIPReadHandler = {abi: Interface, frag: FunctionFragment, fn: CCIPReadFunction};
 type ENSIP10Function = (name: string, context: CallContext) => Promise<Record | undefined>;
 type EZCCIPConfig = {
 	protocol?: SigningProtocol;
@@ -40,7 +41,6 @@ type EZCCIPConfig = {
 	ttlSec?: number;
 	recursionLimit?: number;
 } & CallContextExtra;
-type CCIPReadHandler = {abi: Interface, frag: FunctionFragment, fn: CCIPReadFunction};
 
 export class EZCCIP {
 	enableENSIP10(get: ENSIP10Function, options?: {multicall?: boolean}): void;
@@ -53,13 +53,13 @@ export function serve(handler: ENSIP10Function | EZCCIP, options?: {
 	log?: boolean | ((...a: any) => any); // default console.log w/date, falsy to disable
 	port?: number; // default random open
 	resolvers?: {[key: string]: HexString}; // default: uses sender
-} & EZCCIPConfig): Promise<{
+} & EZCCIPConfig): Promise<Readonly<{
 	http: { close(): void };
 	port: number;
 	endpoint: string;
 	signer: HexString;
 	context: string;
-}>;
+}>>;
 
 export function asciiize(s: string): string;
 export function labels_from_dns_encoded(v: Uint8Array): string[];

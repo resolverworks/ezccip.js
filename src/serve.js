@@ -3,7 +3,7 @@ import {error_with} from './utils.js';
 import {ethers} from 'ethers';
 import {EZCCIP} from './ezccip.js';
 
-export function serve(ezccip, {port, resolvers, log = true, protocol = 'tor', signingKey, ...a} = {}) {
+export function serve(ezccip, {port = 0, resolvers, log = true, protocol = 'tor', signingKey, ...a} = {}) {
 	if (ezccip instanceof Function) {
 		let temp = new EZCCIP();
 		temp.enableENSIP10(ezccip);
