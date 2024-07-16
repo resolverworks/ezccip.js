@@ -981,10 +981,6 @@ function update_ux() {
 	calldata_div.classList.toggle('hide', func !== FUNC_CALLDATA);
 	
 	let ok = true;
-	parse_endpoint();
-	if (!endpoint) ok = false;
-	parse_sender();
-	if (!sender) ok = false;
 	
 	let json = {
 		endpoint: endpoint_field.value,
@@ -1018,8 +1014,12 @@ function update_ux() {
 		json.fields = fields;
 	}
 
-	start_btn.disabled = !ok;
 	data_btn.disabled = !ok;
+	parse_endpoint();
+	if (!endpoint) ok = false;
+	parse_sender();
+	if (!sender) ok = false;
+	start_btn.disabled = !ok;
 
 	localStorage[STORAGE_KEY] = JSON.stringify(json);
 
@@ -1169,6 +1169,7 @@ async function try_call() {
 				});
 
 				let record = new Record();
+				//calls.map((call, i) => record.parseCall(call, answers[i]));
 				record.parseCalls(calls, answers);
 				let row = create_log({title: 'Record'});
 				add_tag(row, create_tag('Count', `${record.size}/${calls.length}`));
