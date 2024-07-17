@@ -346,10 +346,10 @@ function serve(ezccip, {port = 0, resolvers, log = true, protocol = 'tor', signi
 						let v = [];
 						for await (let x of req) v.push(x);
 						let {sender, data: calldata} = JSON.parse(Buffer.concat(v));
-						let key = url.slice(1);
-						let resolver = resolvers ? resolvers[key] : sender;
-						if (!resolver) throw error_with('unknown resolver', {status: 404, key});
-						let {data, history} = await ezccip.handleRead(sender, calldata, {protocol, signingKey, resolver, ip, ...a});
+						let resolverKey = url.slice(1);
+						let resolver = resolvers?.[resolverKey] ?? sender;
+						if (!resolver) throw error_with('unknown resolver', {status: 404, resolverKey});
+						let {data, history} = await ezccip.handleRead(sender, calldata, {protocol, signingKey, resolver, resolverKey, ip, ...a});
 						log?.(ip, url, history.toString());
 						write_json(reply, {data});
 						break;

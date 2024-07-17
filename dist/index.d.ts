@@ -29,6 +29,7 @@ type CallContext = {
 	calldata: HexString;
 	protocol: SigningProtocol;
 	resolver: HexString;
+	resolverKey: string;
 	history: History;
 } & CallContextExtra;
 type CCIPReadFunction = (args: Result, context: CallContext, history: History) => Promise<BytesLike | any[] | undefined>; 
@@ -36,12 +37,10 @@ type CCIPReadHandler = {abi: Interface, frag: FunctionFragment, fn: CCIPReadFunc
 type ENSIP10Function = (name: string, context: CallContext) => Promise<Record | undefined>;
 type EZCCIPConfig = {
 	protocol?: SigningProtocol;
-	resolver?: HexString;
 	signingKey?: SigningKey | HexString;
 	ttlSec?: number;
 	recursionLimit?: number;
 } & CallContextExtra;
-
 export class EZCCIP {
 	enableENSIP10(get: ENSIP10Function, options?: {multicall?: boolean}): void;
 	register(abi: string | string[] | Interface, impl: CCIPReadFunction | {[name: string]: CCIPReadFunction}): CCIPReadHandler[];
