@@ -22,6 +22,9 @@ export type History = {
 	then(): History;
 }
 
+type ResolverMap = {
+	[resolverKey: string]: HexString;
+};
 type SigningProtocol = 'tor' | 'ens' | 'raw';
 type CallContextExtra = {[key: string]: any};
 type CallContext = {
@@ -29,6 +32,7 @@ type CallContext = {
 	calldata: HexString;
 	protocol: SigningProtocol;
 	resolver: HexString;
+	resolvers: ResolverMap
 	resolverKey: string;
 	history: History;
 } & CallContextExtra;
@@ -51,7 +55,7 @@ export function processENSIP10(record: Record | undefined, calldata: HexString, 
 export function serve(handler: ENSIP10Function | EZCCIP, options?: {
 	log?: boolean | ((...a: any) => any); // default console.log w/date, falsy to disable
 	port?: number; // default random open
-	resolvers?: {[key: string]: HexString}; // default: uses sender
+	resolvers?: ResolverMap; // default: uses sender
 } & EZCCIPConfig): Promise<Readonly<{
 	http: { close(): void };
 	port: number;

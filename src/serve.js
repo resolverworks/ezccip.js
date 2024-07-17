@@ -3,7 +3,7 @@ import {error_with} from './utils.js';
 import {ethers} from 'ethers';
 import {EZCCIP} from './ezccip.js';
 
-export function serve(ezccip, {port = 0, resolvers, log = true, protocol = 'tor', signingKey, ...a} = {}) {
+export function serve(ezccip, {port = 0, resolvers = {}, log = true, protocol = 'tor', signingKey, ...a} = {}) {
 	if (ezccip instanceof Function) {
 		let temp = new EZCCIP();
 		temp.enableENSIP10(ezccip);
@@ -33,9 +33,17 @@ export function serve(ezccip, {port = 0, resolvers, log = true, protocol = 'tor'
 						for await (let x of req) v.push(x);
 						let {sender, data: calldata} = JSON.parse(Buffer.concat(v));
 						let resolverKey = url.slice(1);
-						let resolver = resolvers?.[resolverKey] ?? sender;
+						let resolver = resolvers[resolverKey] ?? resolvers['*'] ?? sender;
 						if (!resolver) throw error_with('unknown resolver', {status: 404, resolverKey});
-						let {data, history} = await ezccip.handleRead(sender, calldata, {protocol, signingKey, resolver, resolverKey, ip, ...a});
+						let {data, history} = await ezccip.handleRead(sender, calldata, {
+							protocol,
+							signingKey,
+							resolver,
+							resolvers,
+							resolverKey,
+							ip,
+							...a,
+						});
 						log?.(ip, url, history.toString());
 						write_json(reply, {data});
 						break;
