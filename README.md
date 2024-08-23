@@ -3,7 +3,7 @@ Turnkey [EIP-3668: CCIP-Read](https://eips.ethereum.org/EIPS/eip-3668) Handler f
 
 `$ npm i @resolverworks/ezccip` [&check;](https://www.npmjs.com/package/@resolverworks/ezccip)
 
-* see [**types**](./dist/index.d.ts) / uses [ethers@6](https://github.com/ethers-io/ethers.js/)
+* see [**types**](./dist/index.d.mts) / uses [ethers](https://github.com/ethers-io/ethers.js/)
 * works with any server infrastructure
     * uses minimal imports for serverless
 * implements multiple protocols:

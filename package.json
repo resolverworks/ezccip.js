@@ -1,11 +1,11 @@
 {
 	"name": "@resolverworks/ezccip",
-	"version": "0.0.13",
+	"version": "0.0.14",
 	"type": "module",
 	"scripts": {
 		"test": "node test/all.js",
 		"start": "node test/demo.js",
-		"build": "rollup -c"
+		"build": "cp dist/index.d.mts dist/index.d.cts && rollup -c"
 	},
 	"dependencies": {
 		"ethers": "^6.13.1"
@@ -14,7 +14,6 @@
 		"rollup": "^4.11.0"
 	},
 	"exports": {
-		"types": "./dist/index.d.ts",
 		"import": "./dist/index.mjs",
 		"require": "./dist/index.cjs"
 	},

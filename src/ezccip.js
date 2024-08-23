@@ -158,7 +158,7 @@ export class EZCCIP {
 			history.args = history.show = args;
 			let res = await fn(args, context, history);
 			if (!res) {
-				// falsy  implies return ()
+				// falsy implies return ()
 				res = '0x';
 			} else if (Array.isArray(res)) {
 				// an array implies we need to encode the arguments
