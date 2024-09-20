@@ -1,9 +1,9 @@
 import { toUtf8String, getBytes, isHexString, hexlify, isBytesLike } from 'ethers/utils';
 import { AbiCoder, Interface, FunctionFragment } from 'ethers/abi';
-import { solidityPackedKeccak256 } from 'ethers/hash';
-import { keccak256 } from 'ethers/crypto';
+import { solidityPackedKeccak256, id } from 'ethers/hash';
+import { keccak256, SigningKey } from 'ethers/crypto';
 import { createServer } from 'node:http';
-import { ethers } from 'ethers';
+import { computeAddress } from 'ethers/transaction';
 
 function error_with(message, params, cause) {
 	let error;
@@ -327,10 +327,10 @@ function serve(ezccip, {port = 0, resolvers = {}, log = true, protocol = 'tor', 
 		log = undefined;
 	}
 	if (!signingKey) {
-		signingKey = ethers.id('ezccip'); // 20240518: fixed instead of random key
+		signingKey = id('ezccip'); // 20240518: fixed instead of random key
 	}
-	if (!(signingKey instanceof ethers.SigningKey)) {
-		signingKey = new ethers.SigningKey(signingKey);
+	if (!(signingKey instanceof SigningKey)) {
+		signingKey = new SigningKey(signingKey);
 	}
 	return new Promise(ful => {
 		let http = createServer(async (req, reply) => {
@@ -372,7 +372,7 @@ function serve(ezccip, {port = 0, resolvers = {}, log = true, protocol = 'tor', 
 		http.listen(port, () => {
 			port = http.address().port;
 			let endpoint = `http://localhost:${port}`;
-			let signer = ethers.computeAddress(signingKey);
+			let signer = computeAddress(signingKey);
 			let context = `${signer} ${endpoint}`;
 			log?.('Ready!', {protocol, context});
 			ful({http, port, endpoint, signer, context});

@@ -5,7 +5,7 @@ var abi = require('ethers/abi');
 var hash = require('ethers/hash');
 var crypto = require('ethers/crypto');
 var node_http = require('node:http');
-var ethers = require('ethers');
+var transaction = require('ethers/transaction');
 
 function error_with(message, params, cause) {
 	let error;
@@ -329,10 +329,10 @@ function serve(ezccip, {port = 0, resolvers = {}, log = true, protocol = 'tor', 
 		log = undefined;
 	}
 	if (!signingKey) {
-		signingKey = ethers.ethers.id('ezccip'); // 20240518: fixed instead of random key
+		signingKey = hash.id('ezccip'); // 20240518: fixed instead of random key
 	}
-	if (!(signingKey instanceof ethers.ethers.SigningKey)) {
-		signingKey = new ethers.ethers.SigningKey(signingKey);
+	if (!(signingKey instanceof crypto.SigningKey)) {
+		signingKey = new crypto.SigningKey(signingKey);
 	}
 	return new Promise(ful => {
 		let http = node_http.createServer(async (req, reply) => {
@@ -374,7 +374,7 @@ function serve(ezccip, {port = 0, resolvers = {}, log = true, protocol = 'tor', 
 		http.listen(port, () => {
 			port = http.address().port;
 			let endpoint = `http://localhost:${port}`;
-			let signer = ethers.ethers.computeAddress(signingKey);
+			let signer = transaction.computeAddress(signingKey);
 			let context = `${signer} ${endpoint}`;
 			log?.('Ready!', {protocol, context});
 			ful({http, port, endpoint, signer, context});

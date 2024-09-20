@@ -1,5 +1,6 @@
 import {ethers} from 'ethers';
-import {EZCCIP, processENSIP10, serve} from '../src/index.js'; 
+import {EZCCIP, processENSIP10} from '../src/ezccip.js'; 
+import {serve} from '../src/serve.js'; 
 import {test, after} from 'node:test';
 import assert from 'node:assert/strict';
 

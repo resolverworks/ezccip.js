@@ -1,4 +1,5 @@
-import {EZCCIP, serve} from '../src/index.js';
+import {EZCCIP} from '../src/ezccip.js'; 
+import {serve} from '../src/serve.js'; 
 import {readFileSync} from 'node:fs';
 
 const TOR = '0x7CE6Cf740075B5AF6b1681d67136B84431B43AbD';

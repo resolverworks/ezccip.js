@@ -1,7 +1,9 @@
 import {createServer} from 'node:http';
 import {error_with} from './utils.js';
-import {ethers} from 'ethers';
 import {EZCCIP} from './ezccip.js';
+import {id as keccakStr} from 'ethers/hash';
+import {computeAddress} from 'ethers/transaction';
+import {SigningKey} from 'ethers/crypto';
 
 export function serve(ezccip, {port = 0, resolvers = {}, log = true, protocol = 'tor', signingKey, ...a} = {}) {
 	if (ezccip instanceof Function) {
@@ -15,10 +17,10 @@ export function serve(ezccip, {port = 0, resolvers = {}, log = true, protocol = 
 		log = undefined;
 	}
 	if (!signingKey) {
-		signingKey = ethers.id('ezccip'); // 20240518: fixed instead of random key
+		signingKey = keccakStr('ezccip'); // 20240518: fixed instead of random key
 	}
-	if (!(signingKey instanceof ethers.SigningKey)) {
-		signingKey = new ethers.SigningKey(signingKey);
+	if (!(signingKey instanceof SigningKey)) {
+		signingKey = new SigningKey(signingKey);
 	}
 	return new Promise(ful => {
 		let http = createServer(async (req, reply) => {
@@ -60,7 +62,7 @@ export function serve(ezccip, {port = 0, resolvers = {}, log = true, protocol = 
 		http.listen(port, () => {
 			port = http.address().port;
 			let endpoint = `http://localhost:${port}`;
-			let signer = ethers.computeAddress(signingKey);
+			let signer = computeAddress(signingKey);
 			let context = `${signer} ${endpoint}`;
 			log?.('Ready!', {protocol, context});
 			ful({http, port, endpoint, signer, context});
