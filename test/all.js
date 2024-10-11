@@ -1,15 +1,19 @@
 // check exports
 import {
 	EZCCIP, 
-	serve,
 	History,
 	processENSIP10,
+	RESOLVE_ABI,
 	error_with,
 	asciiize,
 	labels_from_dns_encoded,
-	RESOLVE_ABI
 } from '../src/index.js';
 
+import {
+	serve
+} from '../src/serve.js';
+
+// tests
 import './utils.js';
 import './history.js';
 import './custom.js';

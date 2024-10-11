@@ -23,4 +23,16 @@ test('history', async t => {
 		h.then();
 		assert.equal(h.toString(), '<null>().<null>()')
 	});
+	await t.test('direct show', () => {
+		let h = new History(0);
+		h.name = 'f';
+		h.show = 'a';
+		assert.equal(h.toString(), 'f(a)');
+	});
+	await t.test('delayed show', () => {
+		let h = new History(0);
+		h.name = 'f';
+		h.show = () => ['a', 'b'];
+		assert.equal(h.toString(), 'f(a,b)');
+	});
 });

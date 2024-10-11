@@ -1,7 +1,7 @@
 # ezccip.js
 Turnkey [EIP-3668: CCIP-Read](https://eips.ethereum.org/EIPS/eip-3668) Handler for ENS and arbitrary functions.
 
-`$ npm i @resolverworks/ezccip` [&check;](https://www.npmjs.com/package/@resolverworks/ezccip)
+`npm i @resolverworks/ezccip` [&check;](https://www.npmjs.com/package/@resolverworks/ezccip)
 
 * see [**types**](./dist/index.d.mts) / uses [ethers](https://github.com/ethers-io/ethers.js/)
 * works with any server infrastructure
@@ -93,6 +93,7 @@ console.log(history.toString()); // description of response
 
 Start a [simple server](./src/serve.js) for an EZCCIP instance or a function representing the `enableENSIP10()` handler.
 ```js
+import {serve} from '@resolverworks/ezccip/serve';
 let {http} = await serve(ezccip); // see types for more configuration
 // ...
 http.close();

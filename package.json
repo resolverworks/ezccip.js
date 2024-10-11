@@ -1,21 +1,27 @@
 {
 	"name": "@resolverworks/ezccip",
-	"version": "0.0.15",
+	"version": "0.0.16",
 	"type": "module",
 	"scripts": {
 		"test": "node test/all.js",
 		"start": "node test/demo.js",
-		"build": "cp dist/index.d.mts dist/index.d.cts && rollup -c"
+		"build": "node build/make.js"
 	},
 	"dependencies": {
 		"ethers": "^6.13.1"
 	},
 	"devDependencies": {
-		"rollup": "^4.11.0"
+		"esbuild": "^0.24.0"
 	},
 	"exports": {
-		"import": "./dist/index.mjs",
-		"require": "./dist/index.cjs"
+		".": {
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.cjs"
+		},
+		"./serve": {
+			"import": "./dist/serve.mjs",
+			"require": "./dist/serve.cjs"
+		}
 	},
 	"files": [
 		"./dist"

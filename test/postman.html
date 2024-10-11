@@ -67,12 +67,14 @@ button.copy.copied {
 	background-color: #8f8;
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' height='24' shape-rendering='geometricPrecision' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' viewBox='0 0 24 24' width='24' style='color:var(--geist-foreground)'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E");
 }
+#add_batch_btn,
 #add_field_btn {
 	background-color: #efe;
 }
 /* #mod_fields button { align-self: stretch; } */
 .delete_btn {
 	background-color: #fee;
+	align-self: stretch;
 }
 select {
 	padding: 4px 8px;
@@ -113,9 +115,6 @@ h1 {
 	align-items: center;
 	gap: 8px;
 }
-#config .field {
-	display: flex;
-}
 .header {
 	display: flex;
 	flex-wrap: wrap;
@@ -123,7 +122,7 @@ h1 {
 	gap: 8px;
 	margin-bottom: 8px;
 }
-.header button {
+.header button:first-of-type {
 	margin-left: auto;
 }
 .header i::before {
@@ -156,6 +155,10 @@ textarea {
 	resize: vertical;
 	min-height: 40px;
 }
+#endpoint_field,
+.endpoints_field {
+	color: #00c;
+}
 #method_span:empty { display: none; }
 #method_span {
 	padding: 3px 6px;
@@ -174,11 +177,13 @@ textarea {
 }
 .field {
 	display: flex;
+	flex-wrap: wrap;
 	gap: 8px;
 	align-items: center;
 }
 .field input {
 	padding: 4px;
+	flex: 1;
 }
 #ensip10 .field {
 	align-items: stretch;
@@ -190,6 +195,14 @@ textarea {
 	gap: 2px;
 	text-align: right;
 }
+#batch .field + .field {
+	border-top: 2px solid #fff;
+	padding-top: 8px;
+}
+#batch .endpoints_field {
+	font-size: 12px;
+	flex: 100%;
+}
 .field label span.name {
 	font-weight: bold;
 	line-break: anywhere;
@@ -197,6 +210,10 @@ textarea {
 .field label span.type {
 	font: 11px monospace;
 	opacity: .7;
+}
+.field textarea {
+	display: flex;
+	flex: 100%;
 }
 .type_select, .arg_field {
 	font: 12px monospace;
@@ -268,6 +285,7 @@ textarea {
 #output .tags {
 	display: flex;
 	gap: 4px;
+	align-items: center;
 	flex-wrap: wrap;
 }
 #output .tag {
@@ -397,8 +415,8 @@ footer {
 	<a target="_blank" href="https://github.com/resolverworks/ezccip.js">resolverworks/ezccip.js</a>
 </header>
 <div id="examples">
-	<b>Demo:</b>
-	<button data-prefix="Demo" data-config='{
+	<b> Examples:</b>
+	<button data-config='{
 		"endpoint":"https://raffy.xyz/ezccip/",
 		"name":"raffy.eth",
 		"sender": "0x828ec5bDe537B8673AF98D77bCB275ae1CA26D1f",
@@ -411,7 +429,7 @@ footer {
 			{"type":"pubkey"},
 			{"type":"chash"}
 		]
-	}'>ENSIP-10</button>
+	}'>TOR Protocol</button>
 	<button data-config='{
 		"endpoint":"https://raffy.xyz/ezccip/ens",
 		"sender": "0x3CA097Edd180Ea2C2436BD30c021Ca20869087a0",
@@ -421,28 +439,37 @@ footer {
 			{"type":"text", "arg": "description"},
 			{"type": "addr", "arg": "$eth"}
 		]
-	}'>DNSTORWithENSProtocol</button>
+	}'>ENS Protocol</button>
 	<button data-config='{
 		"endpoint": "https://raffy.xyz/ezccip/",
 		"abi": "function example(uint256 a, uint256 b) returns (uint256 c)",
 		"args": ["69", "420"]
-	}'>ABI</button>
+	}'>ABI: Plus()</button>
 	<button data-config='{
 		"endpoint":"https://raffy.xyz/ezccip/",
 		"calldata": "0x9061b92300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000b0572616666790365746800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008459d1d43c9c8b7ac505c9f0161bbbd04437fce8c630a0886e1ffea00078e298f063a8a5df000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000086c6f636174696f6e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-	}'>Calldata</button>
-	<b>Examples:</b>
-	<button data-prefix="Examples" data-config='{
+	}'>Calldata: Plus()</button>
+	<b>Demos:</b>
+	<button data-config='{
 		"endpoint": "https://raffy.xyz/tog/raffyeth/",
 		"name": "raffy.eth",
 		"fields": [{"type":"text", "arg": "description"}, {"type":"text", "arg": "location"}]
-	}'>raffy&apos;s TOG</button>
+	}'>TOG &rarr; <code>raffy.eth</code></button>
 	<button data-config='{
 		"endpoint": "https://dnssec-oracle.ens.domains/",
 		"abi": "function resolve(bytes memory name, uint16 qtype) returns (tuple(bytes, bytes)[] memory rrs)",
 		"args": ["0x076272616e746c7905726f636b7300", "16"],
 		"proto": "raw"
-	}'>OffchainDNSOracle: <code>brantly.rocks</code></button>
+	}'>OffchainDNSOracle &rarr; <code>brantly.rocks</code></button>
+	<button data-config='{
+		"endpoint": "https://ccip-v2.ens.xyz",
+		"batches": [{
+			"address": "0x84c5AdB77dd9f362A1a3480009992d8d47325dc3",
+			"endpoints": ["https://raffy.xyz/tog/raffyeth/e1"],
+			"calldata": "0x9061b92300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000b057261666679036574680000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000243b3b57de9c8b7ac505c9f0161bbbd04437fce8c630a0886e1ffea00078e298f063a8a5df00000000000000000000000000000000000000000000000000000000"
+		}],
+		"proto": "raw"
+	}'>Batch Gateway &rarr; TOR &rarr; TOG &rarr; <code>raffy.eth</code></button>
 	<!-- <button data-config='{
 		"endpoint": "https://ens-gateway.onrender.com/",
 		"calldata": "0x33e953b500000000000000000000000000000000000000000000000000000000000000800000000000000000000000007c6efcb602bc88794390a0d74c75ad2f1249a17f00000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000020520000000000000000000000000000000000000000000000000000000000000001004001ff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000020cb0cbc8493baf4a7b1972914ba0be89040e56e4a3c98d60268fe37b8c8e546d9",
@@ -481,6 +508,7 @@ footer {
 			<option value="ensip10">ENSIP-10: resolve(name, ...)</option>
 			<option value="abi">Function ABI</option>
 			<option value="calldata">Raw Calldata</option>
+			<option value="batch">Batch Gateway</option>
 		</select>
 	</div>
 	<div id="ensip10" class="rows hide">
@@ -488,17 +516,19 @@ footer {
 			<div class="header">
 				<label for="name_field">ENS Name</label>
 				<i id="name_status"></i>
+				<button id="to_batch_btn">Convert to Batch</button>
 				<button id="resolve_btn" disabled>↩️ Resolve</button>
 			</div>
 			<input class="big" id="name_field" placeholder="raffy.eth">
 		</div>
 		<div id="mod_fields" class="row">
 			<button id="add_field_btn" title="[ALT] Add Default Profile">✏️ Add Field</button>
+			<button id="delete_all_fields_btn" class="hide delete_btn">
+				<svg height="16" stroke-linejoin="round" style="color: currentcolor;" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.75 2.75C6.75 2.05964 7.30964 1.5 8 1.5C8.69036 1.5 9.25 2.05964 9.25 2.75V3H6.75V2.75ZM5.25 3V2.75C5.25 1.23122 6.48122 0 8 0C9.51878 0 10.75 1.23122 10.75 2.75V3H12.9201H14.25H15V4.5H14.25H13.8846L13.1776 13.6917C13.0774 14.9942 11.9913 16 10.6849 16H5.31508C4.00874 16 2.92263 14.9942 2.82244 13.6917L2.11538 4.5H1.75H1V3H1.75H3.07988H5.25ZM4.31802 13.5767L3.61982 4.5H12.3802L11.682 13.5767C11.6419 14.0977 11.2075 14.5 10.6849 14.5H5.31508C4.79254 14.5 4.3581 14.0977 4.31802 13.5767Z" fill="currentColor"></path></svg>
+				Reset
+			</button>
 			<span id="field_count_lbl">0 fields</span>
 			<button id="edit_profile_btn" title="JSON&#10;[ALT] Text">📝️ Edit as Profile</button>
-			<button id="delete_fields_btn" class="hide delete_btn">
-				<svg height="16" stroke-linejoin="round" style="color: currentcolor;" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.75 2.75C6.75 2.05964 7.30964 1.5 8 1.5C8.69036 1.5 9.25 2.05964 9.25 2.75V3H6.75V2.75ZM5.25 3V2.75C5.25 1.23122 6.48122 0 8 0C9.51878 0 10.75 1.23122 10.75 2.75V3H12.9201H14.25H15V4.5H14.25H13.8846L13.1776 13.6917C13.0774 14.9942 11.9913 16 10.6849 16H5.31508C4.00874 16 2.92263 14.9942 2.82244 13.6917L2.11538 4.5H1.75H1V3H1.75H3.07988H5.25ZM4.31802 13.5767L3.61982 4.5H12.3802L11.682 13.5767C11.6419 14.0977 11.2075 14.5 10.6849 14.5H5.31508C4.79254 14.5 4.3581 14.0977 4.31802 13.5767Z" fill="currentColor"></path></svg>
-				Clear</button>
 			<select id="multi_select" class="hide" style="margin-left: auto">
 				<option value="inner">resolve(name, multicall([...]))</option>
 				<option value="outer">multicall([resolve(name, ...), ...])</option>
@@ -523,6 +553,15 @@ footer {
 				<button id="calldata_btn">🔍️ Lookup</button>
 			</div>
 			<textarea id="calldata_ta" rows="8" placeholder="0x12345678..."></textarea>
+		</div>
+	</div>
+	<div id="batch" class="rows hide">
+		<div class="row">
+			<button id="add_batch_btn">✏️ Add Batch</button>
+			<button id="delete_all_batches_btn" class="hide delete_btn">
+				<svg height="16" stroke-linejoin="round" style="color: currentcolor;" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.75 2.75C6.75 2.05964 7.30964 1.5 8 1.5C8.69036 1.5 9.25 2.05964 9.25 2.75V3H6.75V2.75ZM5.25 3V2.75C5.25 1.23122 6.48122 0 8 0C9.51878 0 10.75 1.23122 10.75 2.75V3H12.9201H14.25H15V4.5H14.25H13.8846L13.1776 13.6917C13.0774 14.9942 11.9913 16 10.6849 16H5.31508C4.00874 16 2.92263 14.9942 2.82244 13.6917L2.11538 4.5H1.75H1V3H1.75H3.07988H5.25ZM4.31802 13.5767L3.61982 4.5H12.3802L11.682 13.5767C11.6419 14.0977 11.2075 14.5 10.6849 14.5H5.31508C4.79254 14.5 4.3581 14.0977 4.31802 13.5767Z" fill="currentColor"></path></svg>
+				Reset
+			</button>
 		</div>
 	</div>
 	<div id="actions" class="row">
@@ -558,6 +597,7 @@ const TYPE_PUBKEY = 'pubkey';
 const FUNC_ENSIP10 = 'ensip10';
 const FUNC_ABI = 'abi';
 const FUNC_CALLDATA = 'calldata';
+const FUNC_BATCH = 'batch';
 
 const SUGGESTED_KEYS = [...Profile.ENS().texts];
 const SUGGESTED_COINS = [...Coin].filter(x => !x.unnamed && !x.legacy).sort((a, b) => a.type > b.type ? 1 : -1);
@@ -580,6 +620,11 @@ const ENSIP10_ABI = new ethers.Interface([
 	'function pubkey(bytes32 node) external view returns (uint256 x, uint256 y)',
 ]);
 
+const BATCH_ABI = new ethers.Interface([
+	'function query((address, string[], bytes)[] memory data) external view returns (bool[] memory failures, bytes[] memory responses)',
+	'error HttpError((uint16 status, string message)[] errors)',
+]);
+
 const endpoint_field = document.querySelector('#endpoint_field');
 const method_span = document.querySelector('#method_span');
 const endpoint_status = document.querySelector('#endpoint_status');
@@ -594,6 +639,7 @@ const data_btn = document.querySelector('#data_btn');
 const ensip10_div = document.querySelector('#ensip10');
 const name_field = document.querySelector('#name_field');
 const resolve_btn = document.querySelector('#resolve_btn');
+const to_batch_btn = document.querySelector('#to_batch_btn');
 const name_status = document.querySelector('#name_status');
 const abi_div = document.querySelector('#abi');
 const abi_ta = document.querySelector('#abi_ta');
@@ -605,8 +651,13 @@ const calldata_btn = document.querySelector('#calldata_btn');
 const calldata_status = document.querySelector('#calldata_status');
 const main_spinner = document.querySelector('#actions .spinner');
 const add_field_btn = document.querySelector('#add_field_btn');
-const delete_fields_btn = document.querySelector('#delete_fields_btn');
+const delete_all_fields_btn = document.querySelector('#delete_all_fields_btn');
 const field_count_lbl = document.querySelector('#field_count_lbl');
+
+const batch_div = document.querySelector('#batch');
+const add_batch_btn = document.querySelector('#add_batch_btn');
+const delete_all_batches_btn = document.querySelector('#delete_all_batches_btn');
+
 const multi_select = document.querySelector('#multi_select');
 const proto_select = document.querySelector('#proto_select');
 const output_div = document.querySelector('#output');
@@ -617,25 +668,25 @@ const profile_save_btn = document.querySelector('#profile_save_btn');
 
 let start_time;
 let aborter;
+let update_timer;
 
 let endpoint, sender, name_norm, name_dns, abi, abi_func;
 
 const abi_fields = [];
-
-endpoint_field.addEventListener('input', update_ux);
-sender_field.addEventListener('input', update_ux);
-name_field.addEventListener('input', update_ux);
+endpoint_field.addEventListener('input', update_ux_soon);
+sender_field.addEventListener('input', update_ux_soon);
+name_field.addEventListener('input', update_ux_soon);
 func_select.addEventListener('input', () => {
 	focus_func();
 	update_ux();
 });
 multi_select.addEventListener('input', update_ux);
-abi_ta.addEventListener('input', update_ux);
-calldata_ta.addEventListener('input', update_ux);
+abi_ta.addEventListener('input', update_ux_soon);
+calldata_ta.addEventListener('input', update_ux_soon);
 calldata_btn.addEventListener('click', () => visit(`https://www.4byte.directory/signatures/?bytes4_signature=${calldata_ta.value.trim().slice(0, 10)}`));
 proto_select.addEventListener('input', update_ux);
 endpoint_btn.addEventListener('click', () => visit(endpoint));
-delete_fields_btn.addEventListener('click', () => {
+delete_all_fields_btn.addEventListener('click', () => {
 	delete_fields();
 	update_ux();
 });
@@ -678,6 +729,17 @@ profile_save_btn.addEventListener('click', () => {
 
 });
 resolve_btn.addEventListener('click', () => visit(`https://adraffy.github.io/ens-normalize.js/test/resolver.html#${name_norm}`));
+to_batch_btn.addEventListener('click', () => {
+	load_config({
+		endpoint: 'https://ccip-v2.ens.xyz',
+		proto: 'raw',
+		batches: [{
+			endpoints: [endpoint],
+			address: sender,
+			calldata: make_calldata(),
+		}]
+	})
+});
 start_btn.addEventListener('click', try_call);
 stop_btn.addEventListener('click', () => {
 	aborter.abort();
@@ -710,6 +772,14 @@ add_field_btn.addEventListener('click', e => {
 		add_field();
 	}
 	update_ux(); 
+});
+add_batch_btn.addEventListener('click', e => {
+	add_batch();
+	update_ux();
+});
+delete_all_batches_btn.addEventListener('click', () => {
+	delete_batches();
+	update_ux();
 });
 copy_link_btn.addEventListener('click', () => {
 	navigator.clipboard.writeText(window.location.href);
@@ -780,6 +850,17 @@ function config_from_params(params) {
 				default:
 					break;
 			}
+		} else if (k === 'batch') {
+			if (!json.batches) json.batches = [];
+			let [hex, ...endpoints] = v.split(',');
+			if (!ethers.isHexString(hex) || hex.length < 50) { // 2 + 40 + 8
+				continue;
+			}
+			json.batches.push({
+				address: hex.slice(0, 42),
+				calldata: '0x' + hex.slice(42),
+				endpoints
+			});
 		} else if (k === 'arg') {
 			if (!json.args) json.args = [];
 			json.args.push(v);
@@ -794,6 +875,8 @@ function params_from_config(json) {
 	for (let [k, v] of Object.entries(json)) {
 		if (k === 'fields') {
 			v.forEach(({type, arg}) => params.append('field', type_has_arg(type) ? `${type}-${arg}` : type));
+		} else if (k === 'batches') {
+			v.forEach(({address, calldata, endpoints}) => params.append('batch', [`${address}${calldata.slice(2)}`, ...endpoints].join(',')));
 		} else if (k === 'args') {
 			v.forEach(x => params.append('arg', x));
 		} else if (v) {
@@ -819,6 +902,10 @@ function load_config(json) {
 	} else if (json.calldata) {
 		func_select.value = FUNC_CALLDATA;
 		calldata_ta.value = json.calldata || '';
+	} else if (json.batches) {
+		func_select.value = FUNC_BATCH;
+		delete_batches();
+		json.batches?.forEach(add_batch);
 	} else {
 		func_select.value = FUNC_ENSIP10;
 		name_field.value = json.name || '';
@@ -840,8 +927,9 @@ function focus_func() {
 			case FUNC_ENSIP10: name_field.focus(); break;
 			case FUNC_ABI: abi_ta.focus(); break;
 			case FUNC_CALLDATA: calldata_ta.focus(); break;
+			case FUNC_BATCH: batch_div.querySelector('.addr_field')?.focus(); break;
 		}
-	})
+	});
 }
 
 function parse_endpoint() {
@@ -911,21 +999,27 @@ function parse_abi() {
 				create('span', {className: 'name'}),
 				create('span', {className: 'type'}),
 			));
-			let input_field = create('input', {name});
-			let coder_select = create('select', {className: 'suggest_select'});
+			let input_field = create('input', {
+				name,
+				input() {
+					update_ux_soon();
+				}
+			});
+			let coder_select = create('select', {
+				className: 'suggest_select',
+				input() {
+					let op = BYTES_OPS[coder_select.selectedIndex];
+					coder_select.selectedIndex = -1;
+					if (!op) return;
+					input_field.value = op.encode(input_field.value.trim());
+					update_ux();
+				}
+			});
 			for (let op of BYTES_OPS) {
 				coder_select.append(create('option', null, op.name));
 			}
-			row.append(input_field, coder_select);
 			coder_select.selectedIndex = -1;
-			input_field.addEventListener('input', update_ux);
-			coder_select.addEventListener('input', () => {
-				let op = BYTES_OPS[coder_select.selectedIndex];
-				coder_select.selectedIndex = -1;
-				if (!op) return;
-				input_field.value = op.encode(input_field.value.trim());
-				update_ux();
-			});
+			row.append(input_field, coder_select);
 			abi_fields[i] = row;
 			abi_div.append(row);
 		}
@@ -933,7 +1027,7 @@ function parse_abi() {
 		row.classList.remove('hide');
 		row.querySelector('.name').innerText = param.name;
 		row.querySelector('.type').innerText = param.type;
-		row.querySelector('.suggest_select').classList.toggle('hide', param.type !== 'bytes');
+		row.querySelector('.suggest_select').classList.toggle('hide', param.type === 'string');
 	}
 }
 function parse_name() {
@@ -959,6 +1053,10 @@ function parse_type(param, input) {
 		case 'string':  return parse_as_json(input, 'string');
 		case 'bytes': return ethers.hexlify(input);
 	}
+	let match;
+	if (match = param.type.match(/^bytes(\d+)$/)) {
+		return ethers.zeroPadBytes(input, parseInt(match[1]));
+	}
 	if (param.type.startsWith('uint')) {
 		return BigInt(input);
 	}
@@ -974,11 +1072,19 @@ function parse_as_json(input, type, test) {
 	throw new Error(`expected ${type}: "${input}"`);
 }
 
+function update_ux_soon() {
+	if (update_timer) return;
+	update_timer = setTimeout(update_ux, 100);
+}
 function update_ux() {
+	clearTimeout(update_timer);
+	update_timer = false;
+
 	const func = func_select.value;
 	ensip10_div.classList.toggle('hide',  func !== FUNC_ENSIP10);
 	abi_div.classList.toggle('hide',      func !== FUNC_ABI);
 	calldata_div.classList.toggle('hide', func !== FUNC_CALLDATA);
+	batch_div.classList.toggle('hide',    func !== FUNC_BATCH);
 	
 	let ok = true;
 	
@@ -998,13 +1104,20 @@ function update_ux() {
 	} else if (func === FUNC_CALLDATA) {
 		if (!parse_calldata()) ok = false;
 		json.calldata = calldata_ta.value;
+	} else if (func === FUNC_BATCH) {
+		if (!get_batches().length) add_batch();
+		let batches = get_batches().map(parse_batch);
+		delete_all_batches_btn.classList.toggle('hide', batches.length < 2);
+		if (batches.some(x => x.error)) ok = false;
+		json.batches = batches;
 	} else {
 		let fields = get_fields().map(parse_field);
 		field_count_lbl.innerHTML = `${fields.length} ${plural(fields.length, 'field')}`;
-		delete_fields_btn.classList.toggle('hide', fields.length < 2);
+		delete_all_fields_btn.classList.toggle('hide', fields.length < 2);
 		multi_select.classList.toggle('hide', fields.length < 2);
 		if (!fields.length) ok = false;
 		parse_name();
+		if (!name_norm) ok = false;
 		json.name = name_field.value;
 		resolve_btn.disabled = !name_norm;
 		if (fields.some(x => x.error)) ok = false;
@@ -1012,6 +1125,7 @@ function update_ux() {
 			json.multi = multi_select.value;
 		}
 		json.fields = fields;
+		to_batch_btn.disabled = !ok;
 	}
 
 	data_btn.disabled = !ok;
@@ -1040,6 +1154,9 @@ function make_calldata() {
 		}));
 	} else if (func_select.value === FUNC_CALLDATA) {
 		return calldata_ta.value.trim();
+	} else if (func_select.value === FUNC_BATCH) {
+		let batches = get_batches().map(parse_batch);		
+		return BATCH_ABI.encodeFunctionData('query', [batches.map(x => [x.address, x.endpoints, x.calldata])]);
 	} else {
 		let profile = parse_profile();
 		let calls = profile.makeGetters({name: name_norm});
@@ -1053,15 +1170,21 @@ function make_calldata() {
 	}
 }
 
+function set_working(b) {
+	main_spinner.classList.toggle('hide', !b);
+	start_btn.classList.toggle('hide', b);
+	data_btn.classList.toggle('hide', b);
+	stop_btn.classList.toggle('hide', !b);
+	proto_select.disabled = b;
+	func_select.disabled = b;	
+}
+
 async function try_call() {
 	start_time = Date.now();
 	aborter = new AbortController();
 	output_div.innerHTML = '';
-	main_spinner.classList.remove('hide');
-	start_btn.classList.add('hide');
-	data_btn.classList.add('hide');
 	stop_btn.disabled = false;
-	stop_btn.classList.remove('hide');
+	set_working(true);
 	//let signer = signer_field.value.trim();
 	try {
 		let request = make_calldata();
@@ -1097,7 +1220,7 @@ async function try_call() {
 		let text = await res.text();
 
 		let row2 = create_log({title: '⬇️ Server Response'});
-		row2.classList.add(res.ok ? 'success' : 'error');
+		row2.classList.add(status_class(res.ok));
 		add_tag(row2, create_tag('HTTP Status', res.status, 'http'));
 		add_tag(row2, create_tag('Content Type', res.headers.get('content-type')));
 		output_div.append(row2, create_pre(text, false, row2));
@@ -1114,7 +1237,7 @@ async function try_call() {
 		}
 		if (res.ok) {
 			if (response) {
-				add_tag(row2, create_tag('Response Data', create_copy_btn(response)));
+				add_tag(row2, create_tag('Data Payload', create_copy_btn(response)));
 			}
 			if (proto_select.value === 'tor') {
 				let [sig, exp, signed_response] = ethers.AbiCoder.defaultAbiCoder().decode(['bytes', 'uint64', 'bytes'], response);
@@ -1140,10 +1263,11 @@ async function try_call() {
 				response = signed_response;
 			} else {
 				let row = create_log({title: '🔓️ Unsigned Response Data'});
-				output_div.append(row, create_pre(response, true, row, Infinity));
+				output_div.append(row);
+				create_pre(response, true, row, 0); // dont append
 			}
 
-			if (func_select.value === 'ensip10') {
+			if (func_select.value === FUNC_ENSIP10) {
 				let parsed = ENSIP10_ABI.parseTransaction({data: request});
 				let calls, answers;
 				let multicall = ENSIP10_ABI.getFunction('multicall');
@@ -1193,6 +1317,41 @@ async function try_call() {
 				} catch (err) {
 					append_error(err, 'ABI Decode Error');
 				}
+			} else if (func_select.value === FUNC_BATCH) {
+				try {
+					let [failures, responses] = BATCH_ABI.decodeFunctionResult('query', response);
+					let batches = get_batches().map(parse_batch);
+					if (batches.length != responses.length) throw new Error('response mismatch');
+					batches.forEach(({address, calldata, endpoints}, i) => {
+						let row = create_log({time: `#${i+1}`});
+						let fail = failures[i];
+						row.classList.add(status_class(!fail));
+						add_tag(row, create_tag('Address', create('a', {href: `https://etherscan.io/address/${address}`, innerText: address}), 'code addr'));
+						add_tag(row, create_tag('Request', [calldata.slice(0, 10), create_copy_btn(calldata)], 'code selector'));
+						let answer = responses[i];
+						output_div.append(row);
+						if (fail) {
+							let desc = BATCH_ABI.parseError(answer);
+							if (desc) {
+								let {fragment, ...rest} = desc;
+								if (desc.name === 'HttpError') {
+									rest.args = rest.args[0].map(([code, message], i) => {
+										return {code, message, endpoint: endpoints[i]};
+									});
+								}
+								add_tag(row, create_tag('Response', create_copy_btn(answer)));
+								output_div.append(create_pre_json(rest));
+								answer = false;
+							}
+						}
+						if (answer) {
+							add_tag(row, create_copy_btn(answer));
+							output_div.append(create_pre(answer));
+						}
+					});
+				} catch (err) {
+					append_error(err, 'ABI Decode Error');
+				}
 			}
 		} else {
 			append_error(message, 'CCIP-Read Error');
@@ -1204,10 +1363,11 @@ async function try_call() {
 	add_tag(row, create_tag('Duration', `${((Date.now() - start_time)/1000).toFixed(2)} sec`));
 	output_div.append(row);
 
-	main_spinner.classList.add('hide');
-	start_btn.classList.remove('hide');
-	data_btn.classList.remove('hide');
-	stop_btn.classList.add('hide');
+	// main_spinner.classList.add('hide');
+	// start_btn.classList.remove('hide');
+	// data_btn.classList.remove('hide');
+	// stop_btn.classList.add('hide');
+	set_working(false);
 	aborter = null;
 }
 
@@ -1226,35 +1386,111 @@ function create_signed_row({signed, signed_response, signed_response_hash}) {
 	output_div.append(row, create_pre(signed_response, true, row));
 }
 
-function delete_fields() {
-	get_fields().forEach(x => x.remove());
-}
-function get_fields() {
-	return [...ensip10_div.querySelectorAll('.field')];
+function status_class(ok) {
+	return ok ? 'success' : 'error';
 }
 
-function add_field({type, arg} = {}) {
+function get_batches() {
+	return [...batch_div.querySelectorAll('.field')];
+}
+function delete_batches() {
+	get_batches().forEach(x => x.remove());
+}
+function add_batch({address = '', calldata = '', endpoints = []} = {}) {
+	console.log(endpoints);
 	let row = create('div', {className: 'wide field'});
-	let type_select = create('select', {className: 'type_select'});
-	type_select.append(create('option', {value: TYPE_TEXT}, 'text(key)'));
-	type_select.append(create('option', {value: TYPE_ADDR}, 'addr(coin?)'));
-	type_select.append(create('option', {value: TYPE_CHASH}, 'contenthash()'));
-	type_select.append(create('option', {value: TYPE_PUBKEY}, 'pubkey()'));
-	type_select.append(create('option', {value: TYPE_NAME}, 'name()'));
-	let arg_field = create('input', {className: 'arg_field'});
+	let addr_field = create('input', {
+		className: 'addr_field code', 
+		value: address,
+		placeholder: 'Contract Address', 
+		input() {
+			update_ux_soon();
+		}
+	});
+	let endpoints_field = create('input', {
+		className: 'endpoints_field', 
+		placeholder: 'Endpoint(s)',
+		value: endpoints.join(', '),
+		input() {
+			update_ux_soon();
+		}
+	});
+	let calldata_ta = create('textarea', {
+		className: 'calldata_ta',
+		rows: 6,
+		placeholder: '0x12345678...',
+		input() {
+			update_ux_soon();
+		}
+	}, calldata);
 	let delete_btn = create('button', {
 		className: 'delete_btn icon',
 		click() {
 			row.remove();
 			update_ux();
 		}
-	}, delete_fields_btn.querySelector('svg').cloneNode(true));
+	}, delete_all_batches_btn.querySelector('svg').cloneNode(true));
+	row.append(delete_btn, addr_field, endpoints_field, calldata_ta);
+	batch_div.append(row);
+	Object.assign(row, {
+		addr_field,
+		endpoints_field,
+		calldata_ta,
+	});
+}
+function parse_batch(row) {
+	let address = row.addr_field.value.trim();
+	let endpoints = row.endpoints_field.value.split(',').map(x => x.trim()).filter(x => x);
+	let calldata = row.calldata_ta.value.trim();
+	let error;
+	try {
+		address = ethers.getAddress(address);
+		if (!ethers.isHexString(calldata) || calldata.length < 10) throw new Error('expected calldata');
+		if (!endpoints.length) throw new Error('no endpoints');
+	} catch (err) {
+		error = true;
+	}
+	return {address, endpoints, calldata, error};
+}
+
+function delete_fields() {
+	get_fields().forEach(x => x.remove());
+}
+function get_fields() {
+	return [...ensip10_div.querySelectorAll('.field')];
+}
+function add_field({type, arg} = {}) {
+	let row = create('div', {className: 'wide field'});
+	let type_select = create('select', {
+		className: 'type_select',
+		input() {
+			update_ux();
+		}
+	});
+	type_select.append(create('option', {value: TYPE_TEXT}, 'text(key)'));
+	type_select.append(create('option', {value: TYPE_ADDR}, 'addr(coin?)'));
+	type_select.append(create('option', {value: TYPE_CHASH}, 'contenthash()'));
+	type_select.append(create('option', {value: TYPE_PUBKEY}, 'pubkey()'));
+	type_select.append(create('option', {value: TYPE_NAME}, 'name()'));
+	let arg_field = create('input', {
+		className: 'arg_field',
+		input() {
+			update_ux_soon();
+		}	
+	});
+	let delete_btn = create('button', {
+		className: 'delete_btn icon',
+		click() {
+			row.remove();
+			update_ux();
+		}
+	}, delete_all_fields_btn.querySelector('svg').cloneNode(true));
 	let text_select = create('select', {
 		className: 'suggest_select',
 		input() {
 			arg_field.value = this.value;
 			this.selectedIndex = -1;
-			update_ux();
+			update_ux_soon();
 		}	
 	}, SUGGESTED_KEYS.map(x => create('option', null, x)));
 	let addr_select = create('select', {
@@ -1262,7 +1498,7 @@ function add_field({type, arg} = {}) {
 		input() {
 			arg_field.value = this.value;
 			this.selectedIndex = -1;
-			update_ux();
+			update_ux_soon();
 		}	
 	}, SUGGESTED_COINS.map(x => {
 		let {name, title, chain, type} = x;
@@ -1271,16 +1507,6 @@ function add_field({type, arg} = {}) {
 	}));
 	text_select.selectedIndex = -1;
 	addr_select.selectedIndex = -1;
-	type_select.addEventListener('input', () => {
-		//arg_field.value = '';
-		update_ux();
-	});
-	arg_field.addEventListener('input', update_ux);
-	// suggest_select.addEventListener('input', () => {
-	// 	arg_field.value = suggest_select.value;
-	// 	suggest_select.selectedIndex = -1;
-	// 	update_ux();
-	// });
 	if (type) type_select.value = type;
 	if (arg) arg_field.value = arg;
 	row.append(delete_btn, type_select, addr_select, text_select, arg_field);
@@ -1292,6 +1518,7 @@ function add_field({type, arg} = {}) {
 		addr_select,
 	});
 }
+
 
 function type_has_arg(type) {
 	return type === TYPE_TEXT || type === TYPE_ADDR;
@@ -1401,8 +1628,8 @@ function append_error(err, title = 'Unexpected Error') {
 function add_tag(row, tag) {
 	row.querySelector('.tags').append(tag);
 }
-function create_pre(data, hex, row, max = 1000) {
-	let bytes = hex ? ethers.getBytes(data) : ethers.toUtf8Bytes(data);
+function create_pre(data, is_hex, row, max = 1000) {
+	let bytes = is_hex ? ethers.getBytes(data) : ethers.toUtf8Bytes(data);
 	if (row) {
 		add_tag(row, create_tag(null, `${bytes.length} bytes`, 'size'));
 		add_tag(row, create_copy_btn(data));

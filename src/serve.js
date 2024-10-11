@@ -1,6 +1,5 @@
 import {createServer} from 'node:http';
-import {error_with} from './utils.js';
-import {EZCCIP} from './ezccip.js';
+import {EZCCIP, error_with} from './index.js';
 import {id as keccakStr} from 'ethers/hash';
 import {computeAddress} from 'ethers/transaction';
 import {SigningKey} from 'ethers/crypto';

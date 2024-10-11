@@ -30,7 +30,13 @@ export class History {
 		let {data, name, show, error, children: v, next} = this;
 		let desc = name ?? `<${data ? data.slice(0, 10) : 'null'}>`;
 		desc += '(';
-		if (show) desc += show.map(x => typeof x === 'string' ? asciiize(x) : x).join(',');
+		if (show) {
+			if (typeof show === 'function') show = show(); // delayed output
+			if (!Array.isArray(show)) show = [show]; // simple output
+			if (show.length) { // render as args
+				desc += show.map(x => typeof x === 'string' ? asciiize(x) : x).join(',');
+			}
+		}
 		desc += ')';
 		if (v.length) desc += `^${v.length} [${v.join(' ')}]`;
 		if (error) desc += `<${error}>`;
