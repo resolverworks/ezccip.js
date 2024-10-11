@@ -8,7 +8,7 @@
 		"build": "node build/make.js"
 	},
 	"dependencies": {
-		"ethers": "^6.13.1"
+		"ethers": "^6.13.3"
 	},
 	"devDependencies": {
 		"esbuild": "^0.24.0"
