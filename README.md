@@ -94,9 +94,9 @@ console.log(history.toString()); // description of response
 Start a [simple server](./src/serve.js) for an EZCCIP instance or a function representing the `enableENSIP10()` handler.
 ```js
 import {serve} from '@resolverworks/ezccip/serve';
-let {http} = await serve(ezccip); // see types for more configuration
+let ccip = await serve(ezccip); // see types for more configuration
 // ...
-http.close();
+await ccip.shutdown();
 
 // minimal example:
 // return fixed text() for any name

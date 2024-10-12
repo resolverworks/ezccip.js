@@ -51,7 +51,9 @@ function labels_from_dns_encoded(v) {
       return labels;
     }
     if (v.length < pos + n) break;
-    labels.push((0, import_utils.toUtf8String)(v.subarray(pos, pos += n)));
+    let label = (0, import_utils.toUtf8String)(v.subarray(pos, pos += n));
+    if (label.includes(".")) break;
+    labels.push(label);
   }
   throw new Error("invalid DNS-encoded name");
 }

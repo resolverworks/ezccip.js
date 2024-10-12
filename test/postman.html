@@ -1296,7 +1296,6 @@ async function try_call() {
 				});
 
 				let record = new Record();
-				//calls.map((call, i) => record.parseCall(call, answers[i]));
 				record.parseCalls(calls, answers);
 				let row = create_log({title: 'Record'});
 				add_tag(row, create_tag('Count', `${record.size}/${calls.length}`));
@@ -1362,11 +1361,6 @@ async function try_call() {
 	let row = create_log();
 	add_tag(row, create_tag('Duration', `${((Date.now() - start_time)/1000).toFixed(2)} sec`));
 	output_div.append(row);
-
-	// main_spinner.classList.add('hide');
-	// start_btn.classList.remove('hide');
-	// data_btn.classList.remove('hide');
-	// stop_btn.classList.add('hide');
 	set_working(false);
 	aborter = null;
 }
@@ -1397,7 +1391,6 @@ function delete_batches() {
 	get_batches().forEach(x => x.remove());
 }
 function add_batch({address = '', calldata = '', endpoints = []} = {}) {
-	console.log(endpoints);
 	let row = create('div', {className: 'wide field'});
 	let addr_field = create('input', {
 		className: 'addr_field code', 

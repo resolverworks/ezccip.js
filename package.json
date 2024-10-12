@@ -1,6 +1,6 @@
 {
 	"name": "@resolverworks/ezccip",
-	"version": "0.0.16",
+	"version": "0.0.17",
 	"type": "module",
 	"scripts": {
 		"test": "node test/all.js",

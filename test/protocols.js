@@ -79,14 +79,14 @@ let protocols = {
 for (let [protocol, verify] of Object.entries(protocols)) {
 	test(`protocol: ${protocol}`, async T => {
 		let sender = ethers.ZeroAddress;
-		let {http, signer, endpoint} = await serve(ezccip, {protocol});
-		after(() => http.close());
+		let ccip = await serve(ezccip, {protocol});
+		after(ccip.shutdown);
 		async function get(call) {
 			let request = wrap(call);
-			let res = await fetch(endpoint, {method: 'POST', body: JSON.stringify({sender, data: request})});
+			let res = await fetch(ccip.endpoint, {method: 'POST', body: JSON.stringify({sender, data: request})});
 			assert(res.status, 200);
 			let {data} = await res.json();
-			return verify(request, data, sender, signer);
+			return verify(request, data, sender, ccip.signer);
 		}
 		await T.test('text', async () => {
 			assert.equal(iface.decodeFunctionResult('text', await get(text_call))[0], record.text());

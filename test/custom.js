@@ -12,7 +12,7 @@ test('serve w/custom function', async () => {
 	let ezccip = new EZCCIP();
 	ezccip.register(abi, fn);
 	let ccip = await serve(ezccip, {log: true});
-	after(() => ccip.http.close());
+	after(ccip.shutdown);
 	
 	let frag = abi.getFunction('f');
 	let res = await fetch(ccip.endpoint, {
@@ -36,7 +36,7 @@ test('serve w/custom function', async () => {
 test('return args', async T => {
 	let ezccip = new EZCCIP();	
 	let ccip = await serve(ezccip, {log: true});
-	after(() => ccip.http.close());
+	after(ccip.shutdown);
 	
 	let abi = new ethers.Interface(['function f(uint256) returns (uint256)']);
 	let impls = Object.entries({

@@ -65,8 +65,11 @@ function serve(ezccip, { port = 0, resolvers = {}, log = true, protocol = "tor",
       let endpoint = `http://localhost:${port}`;
       let signer = computeAddress(signingKey);
       let context = `${signer} ${endpoint}`;
-      log?.("Ready!", { protocol, context });
-      ful({ http, port, endpoint, signer, context });
+      const t0 = Date.now();
+      log?.(`Serving "${protocol}" ${context}`);
+      http.on("close", () => log?.(`Shutdown<${Date.now() - t0}ms>`));
+      const shutdown = () => new Promise((ful2) => http.close(ful2));
+      ful({ http, port, endpoint, signer, context, shutdown });
     });
   });
 }

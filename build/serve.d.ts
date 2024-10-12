@@ -1,4 +1,5 @@
 import { EZCCIP, ENSIP10Function, EZCCIPConfig, HexString } from "./index.js";
+import { Server } from "node:http";
 
 export function serve(
 	handler: ENSIP10Function | EZCCIP,
@@ -9,10 +10,11 @@ export function serve(
 	} & EZCCIPConfig
 ): Promise<
 	Readonly<{
-		http: { close(): void };
+		http: Server;
 		port: number;
 		endpoint: string;
 		signer: HexString;
 		context: string;
+		shutdown: () => Promise<void>;
 	}>
 >;
