@@ -91,7 +91,7 @@ var History = class _History {
   }
   toString() {
     let { data, name, show, error, children: v, next } = this;
-    let desc = name ?? `<${data ? data.slice(0, 10) : "null"}>`;
+    let desc = name || `<${data ? data.slice(0, 10) : "null"}>`;
     desc += "(";
     if (show) {
       if (typeof show === "function") show = show();
@@ -253,7 +253,7 @@ async function processENSIP10(record, calldata, multicall = true, history) {
       }
       case "addr(bytes32)": {
         let value = await record?.addr?.(60n);
-        res = [value ? (0, import_utils3.hexlify)(value) : "0x".padEnd(42, "0")];
+        res = ["0x" + (value ? (0, import_utils3.hexlify)(value).slice(2, 42) : "").padStart(40, "0")];
         break;
       }
       case "addr(bytes32,uint256)": {

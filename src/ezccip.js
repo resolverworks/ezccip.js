@@ -28,7 +28,7 @@ export class History {
 	}
 	toString() {
 		let {data, name, show, error, children: v, next} = this;
-		let desc = name ?? `<${data ? data.slice(0, 10) : 'null'}>`;
+		let desc = name || `<${data ? data.slice(0, 10) : 'null'}>`;
 		desc += '(';
 		if (show) {
 			if (typeof show === 'function') show = show(); // delayed output
@@ -207,7 +207,7 @@ export async function processENSIP10(record, calldata, multicall = true, history
 			case 'addr(bytes32)': {
 				// https://eips.ethereum.org/EIPS/eip-137
 				let value = await record?.addr?.(60n);
-				res = [value ? hexlify(value) : '0x'.padEnd(42, '0')]; // ethers bug, doesn't support Uint8Array as address
+				res = ['0x' + (value ? hexlify(value).slice(2, 42) : '').padStart(40, '0')];
 				break;
 			}
 			case 'addr(bytes32,uint256)': {

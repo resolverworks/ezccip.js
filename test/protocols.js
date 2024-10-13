@@ -19,6 +19,7 @@ const iface = new ethers.Interface([
 	'function addr(bytes32, uint256) returns (bytes)',
 	'function resolve(bytes, bytes) returns (bytes)',
 ]);
+
 let text_call = iface.encodeFunctionData('text', [ethers.ZeroHash, 'name']);
 let addr_call = iface.encodeFunctionData('addr', [ethers.ZeroHash, 0]);
 
