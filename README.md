@@ -23,7 +23,8 @@ Turnkey [EIP-3668: CCIP-Read](https://eips.ethereum.org/EIPS/eip-3668) Handler f
 ## Demo
 
 1. `npm run start` &mdash; starts a CCIP-Read server for [**TOR**](https://github.com/resolverworks/TheOffchainResolver.sol#context-format) protocol using [`serve()`](#serve)
-1. `setText("ccip.context", "0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd http://localhost:8016")`
+1. `TOR.setText("ccip.context", "0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd http://localhost:8016")`
+1. or, use [Postman](https://resolverworks.github.io/ezccip.js/test/postman.html#endpoint=https%3A%2F%2Fraffy.xyz%2Fezccip%2F&proto=tor&name=raffy.eth&multi=inner&field=addr-&field=text-description) &mdash; change to `http://localhost:8016`
 
 ### Examples
 
@@ -80,7 +81,6 @@ let {sender, data: calldata} = JSON.parse(req.body); // ABI-encoded request in J
 let {data, history} = await ezccip.handleRead(sender, calldata, {
     protocol: 'tor', // default, tor requires signingKey + resolver
     signingKey, // your private key
-    resolver, // address of the TOR
 });
 reply.json({data}); // ABI-encoded response in JSON for EIP-3668
 console.log(history.toString()); // description of response
@@ -103,10 +103,16 @@ await ccip.shutdown();
 await serve(() => { text: () => 'Raffy' });
 ```
 
-* `serve()` will bind requests to the `sender` if the protocol needs a target and no `resolver` was provided.
-* Provide a `resolvers` mapping to pair endpoint suffixes to specific contract deployments.
-    * The [demo](./test/demo.js#L39) uses `s` to correspond to the [Sepolia deployment](https://sepolia.etherscan.io/address/0x9Ec7f2ce83fcDF589487303fA9984942EF80Cb39), which makes requests to the modified endpoint `http://localhost:8016/s` target that contract, regardless of sender. 
-* An `endpoint` &harr; `contract` pairing is **required** to support wrapped CCIP calls!
+#### Sender vs Origin
+
+* ⚠️ `sender` may not be the originating contract 
+	* see: [recursive CCIP-Read](https://eips.ethereum.org/EIPS/eip-3668#recursive-calls-in-ccip-aware-contracts)
+* **Best Solution**: embed `origin` into the endpoint as a path component:
+	1. `http://my.server/.../0xABCD/...` 
+	1. `origin = 0xABCD`
+* or, use `parseOrigin(path: string) => string` to extract `origin` from an arbitrary path
+* or, supply a fallback `origin`
+* if `origin` is not detected, `origin = sender`
 
 ### processENSIP10()
 

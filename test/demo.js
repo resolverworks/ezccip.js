@@ -10,7 +10,7 @@ let {version} = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
 let ezccip = new EZCCIP();
 ezccip.register('example(uint256, uint256) returns (uint256)', ([a, b]) => [a * 1000n + b]);
 ezccip.enableENSIP10(async (name, context) => {
-	if (context.resolver === DNSTORWithENSProtocol) {
+	if (context.origin === DNSTORWithENSProtocol) {
 		context.protocol = 'ens'; // dynamic protocol change
 	}
 	return {

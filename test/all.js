@@ -19,3 +19,4 @@ import './history.js';
 import './custom.js';
 import './protocols.js';
 import './encoding.js';
+import './origin.js';

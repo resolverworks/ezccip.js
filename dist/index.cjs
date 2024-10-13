@@ -69,6 +69,7 @@ var import_abi = require("ethers/abi");
 var import_utils3 = require("ethers/utils");
 var import_hash = require("ethers/hash");
 var import_crypto = require("ethers/crypto");
+var import_address = require("ethers/address");
 var History = class _History {
   constructor(level) {
     this.level = level;
@@ -97,7 +98,7 @@ var History = class _History {
       if (typeof show === "function") show = show();
       if (!Array.isArray(show)) show = [show];
       if (show.length) {
-        desc += show.map((x) => typeof x === "string" ? asciiize(x) : x).join(",");
+        desc += show.map((x2) => typeof x2 === "string" ? asciiize(x2) : x2).join(",");
       }
     }
     desc += ")";
@@ -119,24 +120,37 @@ var RESOLVE_ABI = new import_abi.Interface([
   "function ABI(bytes32 node, uint256 types) external view returns (uint256 type, bytes memory data)",
   "function multicall(bytes[] calls) external view returns (bytes[])"
 ]);
-RESOLVE_ABI.forEachFunction((x) => x.__name = x.format());
+RESOLVE_ABI.forEachFunction((x2) => x2.__name = x2.format());
 var EZCCIP = class {
   constructor() {
     this.impls = /* @__PURE__ */ new Map();
-    this.register("multicall(bytes[]) external view returns (bytes[])", async ([calls], context, history) => {
+    this.register("multicall(bytes[]) external view returns (bytes[])", async ([calls], context2, history) => {
       history.show = false;
-      return [await Promise.all(calls.map((x) => this.handleCall(x, context, history.enter()).catch(encode_error)))];
+      return [await Promise.all(calls.map((x2) => this.handleCall(x2, context2, history.enter()).catch(encode_error)))];
     });
   }
   enableENSIP10(get, { multicall = true } = {}) {
-    this.register("resolve(bytes, bytes) external view returns (bytes)", async ([dnsname, data], context, history) => {
+    this.register("resolve(bytes, bytes) external view returns (bytes)", async ([dnsname, data], context2, history) => {
       let labels = labels_from_dns_encoded((0, import_utils3.getBytes)(dnsname));
       let name = labels.join(".");
       history.show = [name];
-      let record = await get(name, context, history);
+      let record = await get(name, context2, history);
       if (record) history.record = record;
-      return processENSIP10(record, data, multicall, history.then());
+      return processENSIP10(record, data, multicall, context2, history.then());
     });
+  }
+  findHandler(key) {
+    if (/^0x[0-9a-f]{8}$/.test(key)) {
+      return this.impls.get(key.toLowerCase());
+    } else if (x instanceof import_abi.FunctionFragment) {
+      return this.impls.get(x.selector);
+    } else {
+      for (let x2 of this.impls.values()) {
+        if (x2.frag.name === key || x2.frag.format() === key) {
+          return x2;
+        }
+      }
+    }
   }
   register(abi, impl) {
     if (typeof abi === "string") {
@@ -145,14 +159,14 @@ var EZCCIP = class {
       abi = [abi];
     }
     abi = import_abi.Interface.from(abi);
-    let frags = abi.fragments.filter((x) => x instanceof import_abi.FunctionFragment);
+    let frags = abi.fragments.filter((x2) => x2 instanceof import_abi.FunctionFragment);
     if (impl instanceof Function) {
-      if (frags.length != 1) throw error_with("expected 1 implementation", { abi, impl, names: frags.map((x) => x.format()) });
+      if (frags.length != 1) throw error_with("expected 1 implementation", { abi, impl, names: frags.map((x2) => x2.format()) });
       let frag = frags[0];
       impl = { [frag.name]: impl };
     }
     return Object.entries(impl).map(([key, fn]) => {
-      let frag = frags.find((x) => x.name === key || x.format() === key || x.selector === key);
+      let frag = frags.find((x2) => x2.name === key || x2.format() === key || x2.selector === key);
       if (!frag) {
         throw error_with(`expected interface function: ${key}`, { abi, impl, key });
       }
@@ -162,18 +176,19 @@ var EZCCIP = class {
     });
   }
   // https://eips.ethereum.org/EIPS/eip-3668
-  async handleRead(sender, calldata, { protocol = "tor", signingKey, resolver, recursionLimit = 2, ttlSec = 60, ...context }) {
+  async handleRead(sender, calldata, { protocol = "tor", signingKey, origin, recursionLimit = 2, ttlSec = 60, ...context2 }) {
     if (!(0, import_utils3.isHexString)(sender) || sender.length !== 42) throw error_with("expected sender address", { status: 400 });
     if (!(0, import_utils3.isHexString)(calldata) || calldata.length < 10) throw error_with("expected calldata", { status: 400 });
-    context.sender = sender.toLowerCase();
-    context.calldata = calldata = calldata.toLowerCase();
-    context.resolver = resolver;
-    context.protocol = protocol;
-    let history = context.history = new History(recursionLimit);
-    let response = await this.handleCall(calldata, context, history);
+    const history = new History(recursionLimit);
+    context2.sender = (0, import_address.getAddress)(sender);
+    context2.calldata = calldata = calldata.toLowerCase();
+    context2.origin = origin ? (0, import_address.getAddress)(origin) : context2.sender;
+    context2.protocol = protocol;
+    context2.history = history;
+    const response = await this.handleCall(calldata, context2, history);
     let data;
-    let expires = Math.floor(Date.now() / 1e3) + ttlSec;
-    switch (context.protocol) {
+    const expires = Math.floor(Date.now() / 1e3) + ttlSec;
+    switch (context2.protocol) {
       case "raw": {
         data = response;
         break;
@@ -181,7 +196,7 @@ var EZCCIP = class {
       case "ens": {
         let hash = (0, import_hash.solidityPackedKeccak256)(
           ["bytes", "address", "uint64", "bytes32", "bytes32"],
-          ["0x1900", resolver, expires, (0, import_crypto.keccak256)(calldata), (0, import_crypto.keccak256)(response)]
+          ["0x1900", context2.origin, expires, (0, import_crypto.keccak256)(calldata), (0, import_crypto.keccak256)(response)]
         );
         data = ABI_CODER.encode(
           ["bytes", "uint64", "bytes"],
@@ -192,7 +207,7 @@ var EZCCIP = class {
       case "tor": {
         let hash = (0, import_hash.solidityPackedKeccak256)(
           ["address", "uint64", "bytes32", "bytes32"],
-          [resolver, expires, (0, import_crypto.keccak256)(calldata), (0, import_crypto.keccak256)(response)]
+          [context2.origin, expires, (0, import_crypto.keccak256)(calldata), (0, import_crypto.keccak256)(response)]
         );
         data = ABI_CODER.encode(
           ["bytes", "uint64", "bytes"],
@@ -205,7 +220,7 @@ var EZCCIP = class {
     }
     return { data, history };
   }
-  async handleCall(calldata, context, history) {
+  async handleCall(calldata, context2, history) {
     try {
       history.calldata = calldata;
       let method = calldata.slice(0, 10);
@@ -215,7 +230,7 @@ var EZCCIP = class {
       history.name = frag.name;
       let args = abi.decodeFunctionData(frag, calldata);
       history.args = history.show = args;
-      let res = await fn(args, context, history);
+      let res = await fn(args, context2, history);
       if (!res) {
         res = "0x";
       } else if (Array.isArray(res)) {
@@ -248,7 +263,7 @@ async function processENSIP10(record, calldata, multicall = true, history) {
     switch (frag.__name) {
       case "multicall(bytes[])": {
         if (history) history.show = false;
-        res = [await Promise.all(args.calls.map((x) => processENSIP10(record, x, true, history?.enter()).catch(encode_error)))];
+        res = [await Promise.all(args.calls.map((x2) => processENSIP10(record, x2, true, history?.enter()).catch(encode_error)))];
         break;
       }
       case "addr(bytes32)": {
@@ -286,7 +301,7 @@ async function processENSIP10(record, calldata, multicall = true, history) {
       case "ABI(bytes32,uint256)": {
         let types = Number(args.types);
         if (history) history.show = [abi_types_str(types)];
-        let value = await record?.ABI?.(types);
+        let value = await record?.ABI?.(types, context);
         if ((0, import_utils3.isBytesLike)(value)) return value;
         res = value ? [value.type, value.data] : [0, "0x"];
         break;

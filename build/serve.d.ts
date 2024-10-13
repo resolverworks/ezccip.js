@@ -1,12 +1,14 @@
-import { EZCCIP, ENSIP10Function, EZCCIPConfig, HexString } from "./index.js";
+import { EZCCIP, RecordFunction, EZCCIPConfig, HexString } from "./index.js";
 import { Server } from "node:http";
 
 export function serve(
-	handler: ENSIP10Function | EZCCIP,
+	handler: RecordFunction | EZCCIP,
 	options?: {
 		log?: boolean | ((...a: any) => any); // default console.log w/date, falsy to disable
+		formatError?: (error: Error) => any;
 		port?: number; // default random open
-		resolvers?: { [tag: string]: HexString }; // default: uses sender
+		parseOrigin?: (path: string) => HexString;
+		// this also supplies: { url, ip }
 	} & EZCCIPConfig
 ): Promise<
 	Readonly<{

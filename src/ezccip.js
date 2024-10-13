@@ -2,9 +2,10 @@ import {labels_from_dns_encoded, error_with, asciiize} from './utils.js';
 
 // direct imports to reduce serverless load
 import {AbiCoder, Interface, FunctionFragment} from 'ethers/abi';
-import {isBytesLike, getBytes, isHexString, hexlify} from 'ethers/utils';
+import {isBytesLike, getBytes,  isHexString, hexlify} from 'ethers/utils';
 import {solidityPackedKeccak256} from 'ethers/hash';
 import {keccak256} from 'ethers/crypto';
+import {getAddress} from 'ethers/address';
 
 export class History {
 	constructor(level) {
@@ -80,9 +81,22 @@ export class EZCCIP {
 			history.show = [name];
 			let record = await get(name, context, history);
 			if (record) history.record = record;
-			return processENSIP10(record, data, multicall, history.then());
+			return processENSIP10(record, data, multicall, context, history.then());
 			// returns raw since: abi.decode(abi.encode(x)) == x
 		});
+	}
+	findHandler(key) {
+		if (/^0x[0-9a-f]{8}$/.test(key)) {
+			return this.impls.get(key.toLowerCase());
+		} else if (x instanceof FunctionFragment) {
+			return this.impls.get(x.selector);
+		} else {
+			for (let x of this.impls.values()) {
+				if (x.frag.name === key || x.frag.format() === key) {
+					return x;
+				}
+			}
+		}
 	}
 	register(abi, impl) {
 		if (typeof abi === 'string') {
@@ -108,17 +122,18 @@ export class EZCCIP {
 		});
 	}
 	// https://eips.ethereum.org/EIPS/eip-3668
-	async handleRead(sender, calldata, {protocol = 'tor', signingKey, resolver, recursionLimit = 2, ttlSec = 60, ...context}) {
+	async handleRead(sender, calldata, {protocol = 'tor', signingKey, origin, recursionLimit = 2, ttlSec = 60, ...context}) {
 		if (!isHexString(sender) || sender.length !== 42) throw error_with('expected sender address', {status: 400});
 		if (!isHexString(calldata) || calldata.length < 10) throw error_with('expected calldata', {status: 400});
-		context.sender = sender.toLowerCase();
+		const history = new History(recursionLimit);
+		context.sender = getAddress(sender);
 		context.calldata = calldata = calldata.toLowerCase();
-		context.resolver = resolver;
-		context.protocol = protocol; // allow the protocol be modified by the callback
-		let history = context.history = new History(recursionLimit);
-		let response = await this.handleCall(calldata, context, history);
+		context.origin = origin ? getAddress(origin) : context.sender; // origin can be modified by the callback
+		context.protocol = protocol; // protocol be modified by the callback
+		context.history = history;
+		const response = await this.handleCall(calldata, context, history);
 		let data;
-		let expires = Math.floor(Date.now() / 1000) + ttlSec;
+		const expires = Math.floor(Date.now() / 1000) + ttlSec;
 		switch (context.protocol) {
 			case 'raw': {
 				data = response;
@@ -128,7 +143,7 @@ export class EZCCIP {
 				// https://github.com/ensdomains/offchain-resolver/blob/099b7e9827899efcf064e71b7125f7b4fc2e342f/packages/gateway/src/server.ts#L95
 				let hash = solidityPackedKeccak256(
 					['bytes', 'address', 'uint64', 'bytes32', 'bytes32'],
-					['0x1900', resolver, expires, keccak256(calldata), keccak256(response)]
+					['0x1900', context.origin, expires, keccak256(calldata), keccak256(response)]
 				);
 				data = ABI_CODER.encode(
 					['bytes', 'uint64', 'bytes'],
@@ -140,7 +155,7 @@ export class EZCCIP {
 				// https://github.com/resolverworks/TheOffchainResolver.sol?tab=readme-ov-file#tor-protocol
 				let hash = solidityPackedKeccak256(
 					['address', 'uint64', 'bytes32', 'bytes32'],
-					[resolver, expires, keccak256(calldata), keccak256(response)]
+					[context.origin, expires, keccak256(calldata), keccak256(response)]
 				);
 				data = ABI_CODER.encode(
 					['bytes', 'uint64', 'bytes'],
@@ -246,7 +261,7 @@ export async function processENSIP10(record, calldata, multicall = true, history
 				// https://docs.ens.domains/ens-improvement-proposals/ensip-4-support-for-contract-abis
 				let types = Number(args.types);
 				if (history) history.show = [abi_types_str(types)];
-				let value = await record?.ABI?.(types);
+				let value = await record?.ABI?.(types, context);
 				if (isBytesLike(value)) return value; // support raw encoding
 				res = value ? [value.type, value.data] : [0, '0x'];
 				break;

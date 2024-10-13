@@ -9,17 +9,19 @@ import type {
 
 type HexString = string;
 
+type AnySync<T> = T | Promise<T>;
+
 interface Record {
-	addr?(type: bigint): Promise<BytesLike | undefined>;
-	text?(key: string): Promise<string | undefined>;
-	contenthash?(): Promise<BytesLike | undefined>;
-	pubkey?(): Promise<
+	addr?(type: bigint): AnySync<BytesLike | undefined>;
+	text?(key: string): AnySync<string | undefined>;
+	contenthash?(): AnySync<BytesLike | undefined>;
+	pubkey?(): AnySync<
 		{ x: BigNumberish; y: BigNumberish } | BytesLike | undefined
 	>;
-	name?(): Promise<string | undefined>;
+	name?(): AnySync<string | undefined>;
 	ABI?(
 		types: number
-	): Promise<{ type: number; data: BytesLike } | BytesLike | undefined>;
+	): AnySync<{ type: number; data: BytesLike } | BytesLike | undefined>;
 }
 
 type Show = any | any[];
@@ -40,10 +42,10 @@ type SigningProtocol = "tor" | "ens" | "raw";
 type CallContextExtra = { [key: string]: any };
 
 type CallContext = {
+	origin: HexString;
 	sender: HexString;
 	calldata: HexString;
 	protocol: SigningProtocol;
-	resolver: HexString;
 	history: History;
 } & CallContextExtra;
 
@@ -51,19 +53,20 @@ type CCIPReadFunction = (
 	args: Result,
 	context: CallContext,
 	history: History
-) => Promise<BytesLike | any[] | undefined>;
+) => AnySync<BytesLike | any[] | undefined>;
 
 type CCIPReadHandler = {
 	abi: Interface;
 	frag: FunctionFragment;
 	fn: CCIPReadFunction;
 };
-type ENSIP10Function = (
+type RecordFunction = (
 	name: string,
 	context: CallContext
-) => Promise<Record | undefined>;
+) => AnySync<Record | undefined>;
 
 type EZCCIPConfig = {
+	origin?: HexString;
 	protocol?: SigningProtocol;
 	signingKey?: SigningKey | HexString;
 	ttlSec?: number;
@@ -71,18 +74,16 @@ type EZCCIPConfig = {
 } & CallContextExtra;
 
 export class EZCCIP {
-	enableENSIP10(
-		get: ENSIP10Function,
-		options?: { multicall?: boolean }
-	): void;
+	enableENSIP10(get: RecordFunction, options?: { multicall?: boolean }): void;
 	register(
 		abi: string | string[] | Interface,
 		impl: CCIPReadFunction | { [name: string]: CCIPReadFunction }
 	): CCIPReadHandler[];
+	findHandler(key: string | FunctionFragment): CCIPReadHandler | undefined;
 	handleRead(
 		sender: HexString,
 		calldata: HexString,
-		config: EZCCIPConfig & { resolver?: HexString }
+		config: EZCCIPConfig
 	): Promise<{ data: HexString; history: History }>;
 }
 

@@ -82,9 +82,9 @@ for (let [protocol, verify] of Object.entries(protocols)) {
 		let sender = ethers.ZeroAddress;
 		let ccip = await serve(ezccip, {protocol});
 		after(ccip.shutdown);
-		async function get(call) {
+		async function get(call, url = ccip.endpoint) {
 			let request = wrap(call);
-			let res = await fetch(ccip.endpoint, {method: 'POST', body: JSON.stringify({sender, data: request})});
+			let res = await fetch(url, {method: 'POST', body: JSON.stringify({sender, data: request})});
 			assert(res.status, 200);
 			let {data} = await res.json();
 			return verify(request, data, sender, ccip.signer);

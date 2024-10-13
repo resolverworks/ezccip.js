@@ -4,7 +4,16 @@ import { EZCCIP, error_with } from "./index.mjs";
 import { id as keccakStr } from "ethers/hash";
 import { computeAddress } from "ethers/transaction";
 import { SigningKey } from "ethers/crypto";
-function serve(ezccip, { port = 0, resolvers = {}, log = true, protocol = "tor", signingKey, ...a } = {}) {
+function serve(ezccip, {
+  port = 0,
+  log = true,
+  formatError = (x) => x,
+  protocol = "tor",
+  signingKey = keccakStr("ezccip"),
+  origin,
+  parseOrigin,
+  ...a
+} = {}) {
   if (ezccip instanceof Function) {
     let temp = new EZCCIP();
     temp.enableENSIP10(ezccip);
@@ -15,11 +24,11 @@ function serve(ezccip, { port = 0, resolvers = {}, log = true, protocol = "tor",
   } else if (!log) {
     log = void 0;
   }
-  if (!signingKey) {
-    signingKey = keccakStr("ezccip");
-  }
   if (!(signingKey instanceof SigningKey)) {
     signingKey = new SigningKey(signingKey);
+  }
+  if (!parseOrigin) {
+    parseOrigin = (x) => a.resolvers?.[x.slice(1)] ?? a.resolvers?.["*"];
   }
   return new Promise((ful) => {
     let http = createServer(async (req, reply) => {
@@ -34,17 +43,15 @@ function serve(ezccip, { port = 0, resolvers = {}, log = true, protocol = "tor",
             let v = [];
             for await (let x of req) v.push(x);
             let { sender, data: calldata } = JSON.parse(Buffer.concat(v));
-            let resolverKey = url.slice(1);
-            let resolver = resolvers[resolverKey] ?? resolvers["*"] ?? sender;
-            if (!resolver) throw error_with("unknown resolver", { status: 404, resolverKey });
+            let match = url.match(/\/(0x[a-f0-9]{40})(?:\b|\/|\?)/i);
+            origin = match ? match[1] : parseOrigin(url) || origin;
             let { data, history } = await ezccip.handleRead(sender, calldata, {
-              protocol,
-              signingKey,
-              resolver,
-              resolvers,
-              resolverKey,
+              ...a,
+              origin,
+              url,
               ip,
-              ...a
+              protocol,
+              signingKey
             });
             log?.(ip, url, history.toString());
             write_json(reply, { data });
@@ -54,7 +61,7 @@ function serve(ezccip, { port = 0, resolvers = {}, log = true, protocol = "tor",
             throw error_with("unsupported http method", { status: 405, method });
         }
       } catch (err) {
-        log?.(ip, method, url, err);
+        log?.(ip, method, url, formatError(err));
         let { status = 500, message } = err;
         reply.statusCode = status;
         write_json(reply, { message });

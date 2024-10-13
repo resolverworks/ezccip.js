@@ -8,10 +8,10 @@ test('addr() => address', async T => {
 	const call = abi.encodeFunctionData('addr', [ethers.ZeroHash]);
 	function make(name, data) {
 		return T.test(name, async () => {
-			let encoded = await processENSIP10({
+			const encoded = await processENSIP10({
 				addr() { return data; }
 			}, call);
-			let expected = '0x' + (data ? ethers.hexlify(data).slice(2) : '').slice(0, 40).padStart(64, '0')
+			const expected = '0x' + (data ? ethers.hexlify(data).slice(2) : '').slice(0, 40).padStart(64, '0')
 			assert.equal(encoded, expected);
 		});
 	}
