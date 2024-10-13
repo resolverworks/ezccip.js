@@ -81,7 +81,7 @@ export class EZCCIP {
 			history.show = [name];
 			let record = await get(name, context, history);
 			if (record) history.record = record;
-			return processENSIP10(record, data, multicall, context, history.then());
+			return processENSIP10(record, data, multicall, history.then());
 			// returns raw since: abi.decode(abi.encode(x)) == x
 		});
 	}
@@ -261,7 +261,7 @@ export async function processENSIP10(record, calldata, multicall = true, history
 				// https://docs.ens.domains/ens-improvement-proposals/ensip-4-support-for-contract-abis
 				let types = Number(args.types);
 				if (history) history.show = [abi_types_str(types)];
-				let value = await record?.ABI?.(types, context);
+				let value = await record?.ABI?.(types);
 				if (isBytesLike(value)) return value; // support raw encoding
 				res = value ? [value.type, value.data] : [0, '0x'];
 				break;
