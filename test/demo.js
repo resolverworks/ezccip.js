@@ -2,7 +2,6 @@ import {EZCCIP} from '../src/ezccip.js';
 import {serve} from '../src/serve.js'; 
 import {readFileSync} from 'node:fs';
 
-const TOR = '0x7CE6Cf740075B5AF6b1681d67136B84431B43AbD';
 const DNSTORWithENSProtocol = '0x3CA097Edd180Ea2C2436BD30c021Ca20869087a0';
 
 let {version} = JSON.parse(readFileSync(new URL('../package.json', import.meta.url)));
@@ -43,17 +42,6 @@ ezccip.enableENSIP10(async (name, context) => {
 
 await serve(ezccip, {
 	port: 8016,
-	resolvers: {
-	   // old TORs (during development)
-	      '': '0x828ec5bDe537B8673AF98D77bCB275ae1CA26D1f', // Mainnet
-	     's': '0x9Ec7f2ce83fcDF589487303fA9984942EF80Cb39', // Sepolia
-	     'g': '0x9b87849Aa21889343b6fB1E146f9F734ecFA9982', // Goerli
-
-	   // newest TOR
-	    'e4': TOR, // Mainnet (v4)
-	    's4': '0x3c187BAb6dC2C94790d4dA5308672e6F799DcEC3', // Sepolia (v4)
-
-	   'ens': DNSTORWithENSProtocol, // Mainnet
-	},
+	protocol: 'tor',
 	signingKey: '0xbd1e630bd00f12f0810083ea3bd2be936ead3b2fa84d1bd6690c77da043e9e02',
 });

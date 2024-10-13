@@ -5,33 +5,42 @@ Turnkey [EIP-3668: CCIP-Read](https://eips.ethereum.org/EIPS/eip-3668) Handler f
 
 * see [**types**](./dist/index.d.mts) / uses [ethers](https://github.com/ethers-io/ethers.js/)
 * works with any server infrastructure
-    * uses minimal imports for serverless
+	* uses minimal imports for serverless
 * implements multiple protocols:
-    * `"tor"` &mdash; [resolverworks/**TheOffchainResolver.sol**](https://github.com/resolverworks/TheOffchainResolver.sol)
-    * `"ens"` &mdash; [ensdomains/**offchain-resolver**](https://github.com/ensdomains/offchain-resolver/) and [ccip.tools](https://ccip.tools/)
-    * `"raw"` &mdash; raw response (EVM Gateway, testing, etc.) 
+	* `"tor"` &mdash; [resolverworks/**TheOffchainResolver.sol**](https://github.com/resolverworks/TheOffchainResolver.sol)
+	* `"ens"` &mdash; [ensdomains/**offchain-resolver**](https://github.com/ensdomains/offchain-resolver/) and [ccip.tools](https://ccip.tools/)
+	* `"raw"` &mdash; raw response (EVM Gateway, testing, etc.) 
 * used by [resolverworks/**TheOffchainGateway.js**](https://github.com/resolverworks/TheOffchainGateway.js)
 * `enableENSIP10()` drop-in support for [resolverworks/**enson.js**](https://github.com/resolverworks/enson.js) **Record**-type
 * supports *Multicall-over-CCIP-Read*
-    * `resolve(name, multicall([...]))`
-    * `multicall([resolve(name, ...), ...])`
-    * `multicall([resolve(name, multicall([...])), ...])`
+	* `resolve(name, multicall([...]))`
+	* `multicall([resolve(name, ...), ...])`
+	* `multicall([resolve(name, multicall([...])), ...])`
 * use [`serve()`](#serve) to quickly launch a server
 * [**CCIP Postman**](https://resolverworks.github.io/ezccip.js/test/postman.html) ⭐️
-    * directly debug any CCIP-Read server (no RPC)
+	* directly debug any CCIP-Read server (no RPC)
 
 ## Demo
 
 1. `npm run start` &mdash; starts a CCIP-Read server for [**TOR**](https://github.com/resolverworks/TheOffchainResolver.sol#context-format) protocol using [`serve()`](#serve)
-1. `TOR.setText("ccip.context", "0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd http://localhost:8016")`
-1. or, use [Postman](https://resolverworks.github.io/ezccip.js/test/postman.html#endpoint=https%3A%2F%2Fraffy.xyz%2Fezccip%2F&proto=tor&name=raffy.eth&multi=inner&field=addr-&field=text-description) &mdash; change to `http://localhost:8016`
+1. check [Postman](https://resolverworks.github.io/ezccip.js/test/postman.html#endpoint=https%3A%2F%2Fraffy.xyz%2Fezccip%2F&proto=tor&name=raffy.eth&multi=inner&field=addr-&field=text-description) &larr; change to `http://localhost:8016`
+1. choose a TOR:
+	1. [**TOR** on Mainnet or Sepolia](https://github.com/resolverworks/TheOffchainResolver.sol#theoffchainresolversol)
+	1. [**DNSTORWithENSProtocol** on Mainnet or Sepolia](https://github.com/resolverworks/TheOffchainResolver.sol?tab=readme-ov-file#dnstorwithensprotocolsol)
+1. [setup](https://github.com/resolverworks/TheOffchainResolver.sol#setup) Context: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd http://localhost:8016`
+
 
 ### Examples
 
-* **DNS**: [`ezccip.raffy.xyz`](https://adraffy.github.io/ens-normalize.js/test/resolver.html#ezccip.raffy.xyz) (Mainnet)
-    * Context: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/`
-* **ENS**: [`ezccip.eth`](https://adraffy.github.io/ens-normalize.js/test/resolver.html?sepolia#ezccip.eth) (Sepolia)
-    * Context: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/s`
+* **DNS** (using `"tor"` protocol on Mainnet): [`ezccip.raffy.xyz`](https://adraffy.github.io/ens-normalize.js/test/resolver.html#ezccip.raffy.xyz)
+	* Resolver: [`0x7CE6Cf740075B5AF6b1681d67136B84431B43AbD`](https://etherscan.io/address/0x7CE6Cf740075B5AF6b1681d67136B84431B43AbD)
+	* Context: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/0x7CE6Cf740075B5AF6b1681d67136B84431B43AbD`
+* **ENS** (using `"tor"` protocol on Sepolia): [`ezccip.eth`](https://adraffy.github.io/ens-normalize.js/test/resolver.html?sepolia#ezccip.eth)
+	* Resolver: [`0x3c187BAb6dC2C94790d4dA5308672e6F799DcEC3`](https://sepolia.etherscan.io/address/0x3c187BAb6dC2C94790d4dA5308672e6F799DcEC3)
+	* Context: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/0x3c187BAb6dC2C94790d4dA5308672e6F799DcEC3`
+* **DNS** (using `"ens"` protocol on Mainnet) [`ens.ezccip.raffy.xyz`](https://adraffy.github.io/ens-normalize.js/test/resolver.html#ens.ezccip.raffy.xyz)
+	* Resolver: [0x3CA097Edd180Ea2C2436BD30c021Ca20869087a0](https://etherscan.io/address/0x3CA097Edd180Ea2C2436BD30c021Ca20869087a0)
+	* Contect: `0xd00d726b2aD6C81E894DC6B87BE6Ce9c5572D2cd https://raffy.xyz/ezccip/0x3CA097Edd180Ea2C2436BD30c021Ca20869087a0`
 
 ## Usage
 
