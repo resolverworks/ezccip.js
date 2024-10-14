@@ -67,14 +67,13 @@ function serve(ezccip, {
             for await (let x of req) v.push(x);
             let { sender, data: calldata } = JSON.parse(Buffer.concat(v));
             let match = url.match(/\/(0x[a-f0-9]{40})(?:\b|\/|\?)/i);
-            origin = match ? match[1] : parseOrigin(url) || origin;
             let { data, history } = await ezccip.handleRead(sender, calldata, {
               ...a,
-              origin,
               url,
               ip,
               protocol,
-              signingKey
+              signingKey,
+              origin: match ? match[1] : parseOrigin(url) || origin
             });
             log?.(ip, url, history.toString());
             write_json(reply, { data });
