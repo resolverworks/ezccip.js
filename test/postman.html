@@ -419,8 +419,8 @@ footer {
 	<button data-config='{
 		"endpoint":"https://raffy.xyz/ezccip/",
 		"name":"raffy.eth",
-		"sender": "0x828ec5bDe537B8673AF98D77bCB275ae1CA26D1f",
 		"fields":[
+			{"type":"text", "arg": "location"},
 			{"type":"text", "arg": "name"},
 			{"type":"text", "arg": "notice"},
 			{"type":"text", "arg": "description"},
@@ -429,17 +429,17 @@ footer {
 			{"type":"pubkey"},
 			{"type":"chash"}
 		]
-	}'>TOR Protocol</button>
+	}'>TOR</button>
 	<button data-config='{
-		"endpoint":"https://raffy.xyz/ezccip/ens",
+		"endpoint":"https://raffy.xyz/ezccip/0x3CA097Edd180Ea2C2436BD30c021Ca20869087a0",
 		"sender": "0x3CA097Edd180Ea2C2436BD30c021Ca20869087a0",
 		"proto": "ens",
 		"name":"raffy.eth",
 		"fields":[
-			{"type":"text", "arg": "description"},
+			{"type":"text", "arg": "location"},
 			{"type": "addr", "arg": "$eth"}
 		]
-	}'>ENS Protocol</button>
+	}'>TOR w/ENS Protocol</button>
 	<button data-config='{
 		"endpoint": "https://raffy.xyz/ezccip/",
 		"abi": "function example(uint256 a, uint256 b) returns (uint256 c)",
@@ -457,7 +457,7 @@ footer {
 	}'>TOG &rarr; <code>raffy.eth</code></button>
 	<button data-config='{
 		"endpoint": "https://dnssec-oracle.ens.domains/",
-		"abi": "function resolve(bytes memory name, uint16 qtype) returns (tuple(bytes, bytes)[] memory rrs)",
+		"abi": "function resolve(bytes memory name, uint16 qtype) returns ((bytes, bytes)[] memory rrs)",
 		"args": ["0x076272616e746c7905726f636b7300", "16"],
 		"proto": "raw"
 	}'>OffchainDNSOracle &rarr; <code>brantly.rocks</code></button>
