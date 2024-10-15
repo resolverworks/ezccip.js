@@ -1,6 +1,6 @@
 {
 	"name": "@resolverworks/ezccip",
-	"version": "0.0.20",
+	"version": "0.0.21",
 	"type": "module",
 	"scripts": {
 		"test": "node test/all.js",
@@ -8,7 +8,7 @@
 		"build": "node build/make.js"
 	},
 	"dependencies": {
-		"ethers": "^6.13.3"
+		"ethers": "^6.13.4"
 	},
 	"devDependencies": {
 		"esbuild": "^0.24.0"

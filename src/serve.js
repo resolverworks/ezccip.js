@@ -30,6 +30,7 @@ export function serve(ezccip, {
 	if (!parseOrigin) { // backwards compat with old design 
 		parseOrigin = x => a.resolvers?.[x.slice(1)] ?? a.resolvers?.['*'];
 	}
+	let killer;
 	return new Promise(ful => {
 		let http = createServer(async (req, reply) => {
 			let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
@@ -60,6 +61,15 @@ export function serve(ezccip, {
 				write_json(reply, {message});
 			}
 		});
+		function shutdown() {
+			if (!killer && http.listening) {
+				killer = new Promise(ful => http.close(() => {
+					killer = null;
+					ful();
+				}));
+			}
+			return killer;
+		}
 		http.listen(port, () => {
 			port = http.address().port;
 			let endpoint = `http://localhost:${port}`;
@@ -68,7 +78,6 @@ export function serve(ezccip, {
 			const t0 = Date.now();
 			log?.(`Serving "${protocol}" ${context}`); //, {protocol, context});
 			http.on('close', () => log?.(`Shutdown<${Date.now() - t0}ms>`));
-			const shutdown = () => new Promise(ful => http.close(ful));
 			ful({http, port, endpoint, signer, context, shutdown});
 		});
 	});

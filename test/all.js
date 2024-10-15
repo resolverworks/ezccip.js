@@ -20,3 +20,4 @@ import './custom.js';
 import './protocols.js';
 import './encoding.js';
 import './origin.js';
+import './shutdown.js';
