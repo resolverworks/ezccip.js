@@ -88,8 +88,8 @@ export class EZCCIP {
 	findHandler(key) {
 		if (/^0x[0-9a-f]{8}$/.test(key)) {
 			return this.impls.get(key.toLowerCase());
-		} else if (x instanceof FunctionFragment) {
-			return this.impls.get(x.selector);
+		} else if (key instanceof FunctionFragment) {
+			return this.impls.get(key.selector);
 		} else {
 			for (let x of this.impls.values()) {
 				if (x.frag.name === key || x.frag.format() === key) {

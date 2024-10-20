@@ -62,7 +62,8 @@ export function serve(ezccip, {
 			}
 		});
 		function shutdown() {
-			if (!killer && http.listening) {
+			if (!killer) {
+				if (!http.listening) return Promise.resolve();
 				killer = new Promise(ful => http.close(() => {
 					killer = null;
 					ful();

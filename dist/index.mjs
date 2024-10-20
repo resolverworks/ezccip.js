@@ -67,7 +67,7 @@ var History = class _History {
       if (typeof show === "function") show = show();
       if (!Array.isArray(show)) show = [show];
       if (show.length) {
-        desc += show.map((x2) => typeof x2 === "string" ? asciiize(x2) : x2).join(",");
+        desc += show.map((x) => typeof x === "string" ? asciiize(x) : x).join(",");
       }
     }
     desc += ")";
@@ -89,13 +89,13 @@ var RESOLVE_ABI = new Interface([
   "function ABI(bytes32 node, uint256 types) external view returns (uint256 type, bytes memory data)",
   "function multicall(bytes[] calls) external view returns (bytes[])"
 ]);
-RESOLVE_ABI.forEachFunction((x2) => x2.__name = x2.format());
+RESOLVE_ABI.forEachFunction((x) => x.__name = x.format());
 var EZCCIP = class {
   constructor() {
     this.impls = /* @__PURE__ */ new Map();
     this.register("multicall(bytes[]) external view returns (bytes[])", async ([calls], context, history) => {
       history.show = false;
-      return [await Promise.all(calls.map((x2) => this.handleCall(x2, context, history.enter()).catch(encode_error)))];
+      return [await Promise.all(calls.map((x) => this.handleCall(x, context, history.enter()).catch(encode_error)))];
     });
   }
   enableENSIP10(get, { multicall = true } = {}) {
@@ -111,12 +111,12 @@ var EZCCIP = class {
   findHandler(key) {
     if (/^0x[0-9a-f]{8}$/.test(key)) {
       return this.impls.get(key.toLowerCase());
-    } else if (x instanceof FunctionFragment) {
-      return this.impls.get(x.selector);
+    } else if (key instanceof FunctionFragment) {
+      return this.impls.get(key.selector);
     } else {
-      for (let x2 of this.impls.values()) {
-        if (x2.frag.name === key || x2.frag.format() === key) {
-          return x2;
+      for (let x of this.impls.values()) {
+        if (x.frag.name === key || x.frag.format() === key) {
+          return x;
         }
       }
     }
@@ -128,14 +128,14 @@ var EZCCIP = class {
       abi = [abi];
     }
     abi = Interface.from(abi);
-    let frags = abi.fragments.filter((x2) => x2 instanceof FunctionFragment);
+    let frags = abi.fragments.filter((x) => x instanceof FunctionFragment);
     if (impl instanceof Function) {
-      if (frags.length != 1) throw error_with("expected 1 implementation", { abi, impl, names: frags.map((x2) => x2.format()) });
+      if (frags.length != 1) throw error_with("expected 1 implementation", { abi, impl, names: frags.map((x) => x.format()) });
       let frag = frags[0];
       impl = { [frag.name]: impl };
     }
     return Object.entries(impl).map(([key, fn]) => {
-      let frag = frags.find((x2) => x2.name === key || x2.format() === key || x2.selector === key);
+      let frag = frags.find((x) => x.name === key || x.format() === key || x.selector === key);
       if (!frag) {
         throw error_with(`expected interface function: ${key}`, { abi, impl, key });
       }
@@ -232,7 +232,7 @@ async function processENSIP10(record, calldata, multicall = true, history) {
     switch (frag.__name) {
       case "multicall(bytes[])": {
         if (history) history.show = false;
-        res = [await Promise.all(args.calls.map((x2) => processENSIP10(record, x2, true, history?.enter()).catch(encode_error)))];
+        res = [await Promise.all(args.calls.map((x) => processENSIP10(record, x, true, history?.enter()).catch(encode_error)))];
         break;
       }
       case "addr(bytes32)": {

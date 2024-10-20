@@ -10,5 +10,6 @@ test('multi shutdown', async () => {
 test('stacked shutdown', async () => {
 	const {shutdown} = await serve(() => {});
 	await shutdown();
+	assert.notEqual(shutdown(), shutdown());
 	await shutdown();
 });

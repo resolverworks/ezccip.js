@@ -69,11 +69,11 @@ ezccip.enableENSIP10(async (name, context) => {
 
 // more complicated example
 let abi = new ethers.Interface([
-    'function f(bytes32 x) return (string)',
-    'function g(uint256 a, uint256 b) return (uint256)',
+    'function f(bytes32 x) returns (string)',
+    'function g(uint256 a, uint256 b) returns (uint256)',
 ]);
 ezccip.register(abi, { // register multiple functions at once using existing ABI
-    async ['f()']([x], context, history) { // match function by signature
+    async ['f(bytes32)']([x], context, history) { // match function by signature
         history.show = [context.sender]; // replace arguments of f(...) in logger 
         history.name = 'Chonk'; // rename f() to Chonk() in logger
         return [context.calldata]; // echo incoming calldata

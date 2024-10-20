@@ -4,6 +4,19 @@ import {serve} from '../src/serve.js';
 import {test, after} from 'node:test';
 import assert from 'node:assert/strict';
 
+test('findHandler', async () => {
+	let ezccip = new EZCCIP();
+	ezccip.register('f(bytes32 x) returns (string)', () => []);
+	assert(ezccip.findHandler('f'));
+	assert(ezccip.findHandler('f(bytes32)'));
+	let abi = new ethers.Interface([
+		'function g(uint256 a, uint256 b) view returns (uint256)',
+	])
+	ezccip.register(abi, () => []);
+	assert(ezccip.findHandler('g'));
+	assert(ezccip.findHandler(ethers.id('g(uint256,uint256)').slice(0, 10)));
+});
+
 test('serve w/custom function', async () => {
 	let args = [69n, 420n];
 	let fn = ([a, b]) => [a * 1000n + b];
